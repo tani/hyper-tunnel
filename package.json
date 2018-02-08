@@ -1,0 +1,20 @@
+{
+  "name": "noncloud",
+  "version": "0.1.0",
+  "description": "expose your localhost",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "bin": "client.js",
+  "author": "TANIGUCHI Masaya",
+  "license": "GPL",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "circular-json": "^0.5.1",
+    "commander": "^2.14.1",
+    "express": "^4.16.2",
+    "request": "^2.83.0",
+    "ws": "^4.0.0"
+  }
+}
