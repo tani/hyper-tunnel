@@ -25,14 +25,14 @@ const version = require('./package.json').version;
 
 Commander
     .version(version, '-v, --version')
-    .option('-s, --secure', 'use SSL/TLS')
     .option('-n, --name <name>',  'set application name')
     .option('-r, --remotehost <remotehost:port>', 'set noncloud server', 'noncloud.herokuapp.com')
     .option('-l, --localhost <localhost:port>',  'tunnel traffic to this host', 'localhost:80')
+    .option('-s, --secure', 'use HTTPS between client and localhost')
     .parse(process.argv);
 
 if (Commander.name && Commander.localhost) {
-    const websocketclient = new WebSocket(`ws${Commander.secure ? 's' : ''}://${Commander.remotehost}`);
+    const websocketclient = new WebSocket(`wss://${Commander.remotehost}`);
     websocketclient.once('open', ()=>{
         websocketclient.send(Commander.name);
         websocketclient.on('message', (data)=>{
@@ -44,10 +44,11 @@ if (Commander.name && Commander.localhost) {
                 method: websocketrequest.method,
                 headers: websocketrequest.headers,
                 qs: websocketrequest.query,
-                body: websocketrequest.body.data && Buffer.from(websocketrequest.body.data)
+                body: websocketrequest.body && Buffer.from(websocketrequest.body.data)
             }, (error, response, body)=>{
                 websocketclient.send(CircularJSON.stringify(response));
             });
         });
     });
+    console.log(`https://${Commander.remotehost}/${Commander.name} --> http://${Commander.localhost}`);        
 }
