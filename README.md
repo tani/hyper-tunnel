@@ -11,7 +11,7 @@ web browser <--HTTPS--> noncloud server
                               |
 ~~~~~~~~~~~~~~Firewall~~~~~~ WSS ~~~~~~~
                               |
-  localhost <--HTTP---> noncloud client
+  localhost <-HTTP(S)-> noncloud client
 ```
 
 ## How to use
@@ -28,16 +28,16 @@ $ npm install -g asciian/noncloud
 $ noncloud -n example
 ```
 
-to make HTTPS tunnel over WebSocket to 80 port at `https://noncloud.herokuapp.com/example`. However this commad isn't secure yet! You need to add `--secure` option to use WebSocket over SSL/TLS. And if you change the port, then you need to add `--localhost` option. Futhermore you can use other noncloud server. To do this, you also set `--remotehost` option.
-
-## Copyright & License
-
-Copryright (c) 2018 TANIGUCHI Masaya All Rights Reserved.
-
-noncloud licensed under the GPLv3 or later.
+to make HTTPS tunnel over WSS to 80 port at `https://noncloud.herokuapp.com/example`. However this commad isn't secure yet! You need to add `--secure` option to use HTTPS between client and localhost. And if you change the port, then you need to add `--localhost` option. Futhermore you can use other noncloud server. To do this, you also set `--remotehost` option.
 
 ## Related Services
 
 - localtunnel
 - ngrok
 - pagekite
+
+## Copyright & License
+
+Copryright (c) 2018 TANIGUCHI Masaya All Rights Reserved.
+
+noncloud licensed under the GPLv3 or later.
