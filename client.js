@@ -7,19 +7,19 @@ const version = require('./package.json').version;
 
 Commander
     .version(version, '-v, --version')
+    .option('-s, --secure', 'Use SSL/TLS')
     .option('-n, --name <name>',  'Set application name')
-    .option('-l, --localhost <localhost:port>',  'Tunnel traffic to this host')
     .option('-r, --remotehost <remotehost:port>', 'Set noncloud server', 'noncloud.herokuapp.com')
-    .option('-a, --authorization <username:password>', 'Login noncloud server')
+    .option('-l, --localhost <localhost:port>',  'Tunnel traffic to this host', 'localhost:80')
     .parse(process.argv);
 
-if (Commander.name && Commander.localhost && Commander.authorization) {
-    const websocketclient = new WebSocket(`ws://${Commander.authorization}@${Commander.remotehost}`);
+if (Commander.name && Commander.localhost) {
+    const websocketclient = new WebSocket(`ws${Commander.secure ? 's' : ''}://${Commander.remotehost}`);
     websocketclient.once('open', ()=>{
         websocketclient.send(Commander.name);
         websocketclient.on('message', (data)=>{
             const websocketrequest = CircularJSON.parse(data);
-            websocketrequest.headers.host = (new URL(Commander.localhost)).host;
+            websocketrequest.headers.host = new URL(Commander.localhost).host;
             Request({
                 url: websocketrequest.params[0] || '/',
                 baseUrl: `http://${Commander.localhost}`,
