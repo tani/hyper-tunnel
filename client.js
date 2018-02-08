@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /* 
  * This file is part of the noncloud.
  * Copyright (c) 2018 TANIGUCHI Masaya.
@@ -24,10 +25,10 @@ const version = require('./package.json').version;
 
 Commander
     .version(version, '-v, --version')
-    .option('-s, --secure', 'Use SSL/TLS')
-    .option('-n, --name <name>',  'Set application name')
-    .option('-r, --remotehost <remotehost:port>', 'Set noncloud server', 'noncloud.herokuapp.com')
-    .option('-l, --localhost <localhost:port>',  'Tunnel traffic to this host', 'localhost:80')
+    .option('-s, --secure', 'use SSL/TLS')
+    .option('-n, --name <name>',  'set application name')
+    .option('-r, --remotehost <remotehost:port>', 'set noncloud server', 'noncloud.herokuapp.com')
+    .option('-l, --localhost <localhost:port>',  'tunnel traffic to this host', 'localhost:80')
     .parse(process.argv);
 
 if (Commander.name && Commander.localhost) {
