@@ -1,7 +1,7 @@
 {
   "name": "noncloud",
   "version": "0.1.0",
-  "description": "expose your localhost",
+  "description": "noncloud is HTTPS tunnel over WSS",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
