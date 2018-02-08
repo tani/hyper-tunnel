@@ -21,25 +21,39 @@ const BodyParser = require('body-parser');
 const express = require('express')();
 const server = require('http').Server(express);
 const websocketserver = new WebSocket.Server({ server });
+const application = {};
 
-websocketserver.on('connection', (socket)=>{
-    express.use(BodyParser.raw({ type: '*/*' }));    
-    socket.once('message', (applicationname)=>{
-        const handler = (request, response)=>{
-            socket.send(CircularJSON.stringify(request)); 
-            socket.once('message', (data)=>{
-                const websocketresponse = CircularJSON.parse(data);
-                response.set(websocketresponse.headers);
-                response.status(websocketresponse.statusCode).send(websocketresponse.body);
-            });            
-        };
-        express.all(`/${applicationname}`, handler);
-        express.all(`/${applicationname}/*`, handler);
+websocketserver.on('connection', (socket)=>{   
+    socket.once('message', (name)=>{
+        if(!name.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)){
+            return socket.close();            
+        }
+        if(application[name]){
+            return socket.close();
+        }
+        application[name] = socket;
+        application[name].on('close', ()=>{
+            delete application[name]
+        });
     });
 });
 
-express.get('/', (request, response)=>{
-    response.redirect('https://github.com/asciian/noncloud')
+express.all('/:name*', (request, response)=>{
+    if(!application[request.params.name]){
+        return response.status(404).end();
+    }
+    application[request.params.name].send(CircularJSON.stringify(request)); 
+    application[request.params.name].once('message', (data)=>{
+        const websocketresponse = CircularJSON.parse(data);
+        response.set(websocketresponse.headers);
+        response.status(websocketresponse.statusCode).send(websocketresponse.body);
+    }); 
 });
+
+express.get('/', (request, response, next)=>{
+    response.redirect('https://github.com/asciian/noncloud');
+});
+
+express.use(BodyParser.raw({ type: '*/*' }));
 
 server.listen(process.env.PORT);
