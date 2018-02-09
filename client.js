@@ -34,20 +34,25 @@ Commander
 if (Commander.name && Commander.localhost) {
     const websocketclient = new WebSocket(`wss://${Commander.remotehost}`);
     websocketclient.once('open', ()=>{
-        websocketclient.send(Commander.name);
+        websocketclient.send(CircularJSON.stringify({type: 'register', payload: Commander.name}));
         websocketclient.on('message', (data)=>{
             const websocketrequest = CircularJSON.parse(data);
-            websocketrequest.headers.host = new URL(`http${Commander.secure?'s':''}://${Commander.localhost}`).host;
-            Request({
-                url: websocketrequest.params[0] || '/',
-                baseUrl: `http${Commander.secure?'s':''}://${Commander.localhost}`,
-                method: websocketrequest.method,
-                headers: websocketrequest.headers,
-                qs: websocketrequest.query,
-                body: websocketrequest.body && Buffer.from(websocketrequest.body.data)
-            }, (error, response, body)=>{
-                websocketclient.send(CircularJSON.stringify(response));
-            });
+            if(websocketrequest.type === 'request'){
+                websocketrequest.payload.headers.host = new URL(`http${Commander.secure?'s':''}://${Commander.localhost}`).host;
+                Request({
+                    url: websocketrequest.payload.params[0] || '/',
+                    baseUrl: `http${Commander.secure?'s':''}://${Commander.localhost}`,
+                    method: websocketrequest.payload.method,
+                    headers: websocketrequest.payload.headers,
+                    qs: websocketrequest.payload.query,
+                    body: websocketrequest.payload.body && Buffer.from(websocketrequest.payload.body.data)
+                }, (error, response, body)=>{
+                    if(response){
+                        websocketclient.send(CircularJSON.stringify({type: 'response', payload: response}));
+                    } else {
+                        websocketclient.send(CircularJSON.stringify({type: 'error'}));                }
+                });
+            }
         });
     });
     console.log(`https://${Commander.remotehost}/${Commander.name} --> http${Commander.secure?'s':''}://${Commander.localhost}`);        
