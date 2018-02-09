@@ -39,7 +39,7 @@ websocketserver.on('connection', (socket)=>{
     });
 });
 
-express.all('/:name*', (request, response)=>{
+express.all('/:name/*', (request, response)=>{
     if(!application[request.params.name]){
         response.status(404).end();
     }else{
@@ -54,6 +54,10 @@ express.all('/:name*', (request, response)=>{
             }
         });
     }
+});
+
+express.all('/:name', (request, response)=>{
+    response.redirect(`/${request.params.name}/`);
 });
 
 express.get('/', (request, response, next)=>{
