@@ -37,10 +37,10 @@ if (Commander.name && Commander.localhost) {
         websocketclient.send(Commander.name);
         websocketclient.on('message', (data)=>{
             const websocketrequest = CircularJSON.parse(data);
-            websocketrequest.headers.host = new URL(Commander.localhost).host;
+            websocketrequest.headers.host = new URL(`http${Commander.secure?'s':''}://${Commander.localhost}`).host;
             Request({
                 url: websocketrequest.params[0] || '/',
-                baseUrl: `http://${Commander.localhost}`,
+                baseUrl: `http${Commander.secure?'s':''}://${Commander.localhost}`,
                 method: websocketrequest.method,
                 headers: websocketrequest.headers,
                 qs: websocketrequest.query,
@@ -50,5 +50,5 @@ if (Commander.name && Commander.localhost) {
             });
         });
     });
-    console.log(`https://${Commander.remotehost}/${Commander.name} --> http://${Commander.localhost}`);        
+    console.log(`https://${Commander.remotehost}/${Commander.name} --> http${Commander.secure?'s':''}://${Commander.localhost}`);        
 }
