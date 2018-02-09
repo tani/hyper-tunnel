@@ -24,30 +24,36 @@ const websocketserver = new WebSocket.Server({ server });
 const application = {};
 
 websocketserver.on('connection', (socket)=>{   
-    socket.once('message', (name)=>{
-        if(!name.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)){
-            return socket.close();            
+    socket.once('message', (data)=>{
+        const websocketregister = CircularJSON.parse(data);
+        if(websocketregister.type === 'register'){
+            if(!websocketregister.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/) || application[websocketregister.payload]){
+                socket.close();            
+            }else{
+                application[websocketregister.payload] = socket;
+                application[websocketregister.payload].on('close', ()=>{
+                    delete application[websocketregister.payload]
+                });
+            }
         }
-        if(application[name]){
-            return socket.close();
-        }
-        application[name] = socket;
-        application[name].on('close', ()=>{
-            delete application[name]
-        });
     });
 });
 
 express.all('/:name*', (request, response)=>{
     if(!application[request.params.name]){
-        return response.status(404).end();
+        response.status(404).end();
+    }else{
+        application[request.params.name].send(CircularJSON.stringify({type: 'request', payload: request})); 
+        application[request.params.name].once('message', (data)=>{
+            const websocketresponse = CircularJSON.parse(data);
+            if(websocketresponse.type === 'response'){
+                response.set(websocketresponse.payload.headers);
+                response.status(websocketresponse.payload.statusCode).send(websocketresponse.payload.body);
+            } else {
+                response.status(404).end();
+            }
+        });
     }
-    application[request.params.name].send(CircularJSON.stringify(request)); 
-    application[request.params.name].once('message', (data)=>{
-        const websocketresponse = CircularJSON.parse(data);
-        response.set(websocketresponse.headers);
-        response.status(websocketresponse.statusCode).send(websocketresponse.body);
-    }); 
 });
 
 express.get('/', (request, response, next)=>{
