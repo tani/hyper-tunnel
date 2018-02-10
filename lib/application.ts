@@ -24,7 +24,7 @@ import { IRequestMessage, Message, MessageHandler, RawMessage } from "./message"
 export const application = Express();
 
 export const notFoundHandler = (request: Express.Request, response: Express.Response) => {
-    response.status(404).sendFile("./404.html");
+    response.status(404).sendFile(`${__dirname}/404.html`);
 };
 
 export const applicationHandler = (request: Express.Request, response: Express.Response) => {
