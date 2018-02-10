@@ -4,10 +4,8 @@
   "description": "noncloud is HTTPS tunnel over WSS",
   "main": "server.js",
   "scripts": {
-    "clean": "rm -f lib/*.js *.js *~",
-    "start": "node lib/server.js",
-    "build": "tsc",
-    "postinsall": "postinstall-build"
+    "start": "node bin/server.js",
+    "build": "tsc"
   },
   "bin": "bin/client.js",
   "author": "TANIGUCHI Masaya",
@@ -18,7 +16,6 @@
     "circular-json": "^0.5.1",
     "commander": "^2.14.1",
     "express": "^4.16.2",
-    "postinstall-build": "^5.0.1",
     "ws": "^4.0.0"
   },
   "devDependencies": {
