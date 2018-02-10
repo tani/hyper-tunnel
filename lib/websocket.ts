@@ -25,7 +25,9 @@ const webSocketServer = new WebSocket.Server({
     server,
     verifyClient: ({ req, secure }: { req: any, secure: boolean }) => {
         const authorization = `${process.env.USERNAME}:${process.env.PASSWORD}`;
-        return secure && req.headers.authorization === `Basic ${Buffer.from(authorization).toString("base64")}`;
+        if (secure || process.env.ALLOW_UNENCRYPTED_CONNECTION) {
+            return req.headers.authorization === `Basic ${Buffer.from(authorization).toString("base64")}`;
+        }
     },
 });
 
