@@ -4,17 +4,31 @@
   "description": "noncloud is HTTPS tunnel over WSS",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "clean": "rm -f lib/*.js *.js *~",
+    "start": "node lib/server.js",
+    "build": "tsc",
+    "postinsall": "postinstall-build"
   },
   "bin": "client.js",
   "author": "TANIGUCHI Masaya",
   "license": "GPL",
   "dependencies": {
+    "axios": "^0.17.1",
     "body-parser": "^1.18.2",
     "circular-json": "^0.5.1",
     "commander": "^2.14.1",
     "express": "^4.16.2",
-    "request": "^2.83.0",
+    "postinstall-build": "^5.0.1",
     "ws": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/body-parser": "^1.16.8",
+    "@types/circular-json": "^0.4.0",
+    "@types/commander": "^2.12.2",
+    "@types/express": "^4.11.1",
+    "@types/ws": "^4.0.0",
+    "tslint": "^5.9.1",
+    "typescript": "^2.7.1"
   }
 }
