@@ -25,16 +25,22 @@ import { URL } from "url";
 import WebSocket = require("ws");
 import { IErrorMessage, IRegisterMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "../lib/message";
 
+const buffer = Fs.readFileSync(`${__dirname}/../package.json`);
+const version = JSON.parse(buffer.toString()).version;
+
 Commander
-    .version(JSON.parse(Fs.readdirSync("./package.json")[0]).version, "-v, --version")
+    .version(version, "-v, --version")
     .option("-n, --name <name>", "set application name")
     .option("-a, --authorization <username:password>", "login noncloud server")
     .option("-r, --remotehost <remotehost:port>", "set noncloud server")
     .option("-l, --localhost <localhost:port>", "tunnel traffic to this host")
-    .option("-s, --secure", "use HTTPS between client and localhost")
+    .option("-p, --protocol <remotehost:websocket:localhost>", "use this protocols", "https:wss:http")
     .parse(process.argv);
 
-const webSocketClient = new WebSocket(`wss://${Commander.authorization}@${Commander.remotehost}`);
+const webSocketClient = (() => {
+    const protocol = Commander.protocol.split(":")[1];
+    return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`);
+})();
 
 const successResponse = (response: Axios.AxiosResponse) => {
     const responseMessage: IResponseMessage = { type: "response", payload: response };
@@ -72,6 +78,18 @@ webSocketClient.once("open", () => {
     webSocketClient.on("message", messageHandler);
 });
 
-const remotehost = `https://${Commander.remotehost}/${Commander.name}`;
-const localhost = `http${Commander.secure ? "s" : ""}://${Commander.localhost}`;
-process.stdout.write(`${remotehost} --> ${localhost}\n`);
+{
+    const remotehost = (() => {
+        const protocol = Commander.protocol.split(":")[0];
+        return `${protocol}://${Commander.remotehost}/${Commander.name}`;
+    })();
+    const localhost = (() => {
+        const protocol = Commander.protocol.split(":")[2];
+        return `${protocol}://${Commander.localhost}`;
+    })();
+    const websocket = (() => {
+        const protocol = Commander.protocol.split(":")[1];
+        return `${protocol}://${Commander.remotehost}`;
+    })();
+    process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
+}
