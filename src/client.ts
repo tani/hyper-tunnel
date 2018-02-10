@@ -23,7 +23,7 @@ import Express = require("express");
 import * as Fs from "fs";
 import { URL } from "url";
 import WebSocket = require("ws");
-import { IErrorMessage, IRegisterMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "../lib/message";
+import { IErrorMessage, IRegisterMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
 
 const buffer = Fs.readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
