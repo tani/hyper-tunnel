@@ -23,11 +23,11 @@ import { IRequestMessage, Message, MessageHandler, RawMessage } from "./message"
 
 export const application = Express();
 
-const notFoundHandler = (request: Express.Request, response: Express.Response) => {
-    response.status(404).end();
+export const notFoundHandler = (request: Express.Request, response: Express.Response) => {
+    response.status(404).sendFile("./404.html");
 };
 
-const applicationHandler = (request: Express.Request, response: Express.Response) => {
+export const applicationHandler = (request: Express.Request, response: Express.Response) => {
     if (!database[request.params.name]) {
         notFoundHandler(request, response);
     } else {
