@@ -30,30 +30,30 @@ const server_1 = require("./server");
 const webSocketServer = new WebSocket.Server({
     server: server_1.server,
     verifyClient: ({ req, secure }) => {
-        const authorization = `${process.env.USERNAME}:${process.env.PASSWORD}`;
         if (secure || process.env.ALLOW_UNENCRYPTED_CONNECTION) {
+            const authorization = `${process.env.USERNAME}:${process.env.PASSWORD}`;
             return req.headers.authorization === `Basic ${Buffer.from(authorization).toString("base64")}`;
         }
     },
 });
+const messageHandler = (socket) => (rawMessage) => {
+    const message = CircularJSON.parse(rawMessage);
+    if (message.type === "register" && !message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
+        socket.close();
+    }
+    else if (message.type === "register" && database_1.database[message.payload]) {
+        socket.close();
+    }
+    else if (message.type !== "register") {
+        socket.close();
+    }
+    else {
+        database_1.database[message.payload] = socket;
+        database_1.database[message.payload].on("close", () => {
+            delete database_1.database[message.payload];
+        });
+    }
+};
 webSocketServer.on("connection", (socket) => {
-    const messageHandler = (data) => {
-        const message = CircularJSON.parse(data);
-        if (message.type === "register" && !message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
-            socket.close();
-        }
-        else if (message.type === "register" && database_1.database[message.payload]) {
-            socket.close();
-        }
-        else if (message.type !== "register") {
-            socket.close();
-        }
-        else {
-            database_1.database[message.payload] = socket;
-            database_1.database[message.payload].on("close", () => {
-                delete database_1.database[message.payload];
-            });
-        }
-    };
-    socket.once("message", messageHandler);
+    socket.once("message", messageHandler(socket));
 });

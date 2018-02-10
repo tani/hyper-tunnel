@@ -58,10 +58,12 @@ const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
     return `${protocol}://${Commander.remotehost}/${Commander.name}`;
 })();
+
 const localhost = (() => {
     const protocol = Commander.protocol.split(":")[2];
     return `${protocol}://${Commander.localhost}`;
 })();
+
 const websocket = (() => {
     const protocol = Commander.protocol.split(":")[1];
     return `${protocol}://${Commander.remotehost}`;

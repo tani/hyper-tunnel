@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 import * as Axios from "axios";
 import * as Express from "express";
+import * as WebSocket from "ws";
 
 export interface IRegisterMessage { type: "register"; payload: string; }
 export interface IRequestMessage  { type: "request"; payload: Express.Request; }
