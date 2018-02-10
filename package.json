@@ -9,7 +9,7 @@
     "build": "tsc",
     "postinsall": "postinstall-build"
   },
-  "bin": "client.js",
+  "bin": "bin/client.js",
   "author": "TANIGUCHI Masaya",
   "license": "GPL",
   "dependencies": {
