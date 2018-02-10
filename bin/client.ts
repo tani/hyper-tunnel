@@ -54,12 +54,25 @@ const errorResponse = (error: any) => {
     webSocketClient.send(rawMessage);
 };
 
+const remotehost = (() => {
+    const protocol = Commander.protocol.split(":")[0];
+    return `${protocol}://${Commander.remotehost}/${Commander.name}`;
+})();
+const localhost = (() => {
+    const protocol = Commander.protocol.split(":")[2];
+    return `${protocol}://${Commander.localhost}`;
+})();
+const websocket = (() => {
+    const protocol = Commander.protocol.split(":")[1];
+    return `${protocol}://${Commander.remotehost}`;
+})();
+
 const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
     const message: Message = CircularJSON.parse(rawMessage);
     if (message.type === "request") {
-        message.payload.headers.host = new URL(`http${Commander.secure ? "s" : ""}://${Commander.localhost}`).host;
+        message.payload.headers.host = new URL(localhost).host;
         Axios.default.request({
-            baseURL: `http${Commander.secure ? "s" : ""}://${Commander.localhost}`,
+            baseURL: localhost,
             data: message.payload.body && Buffer.from(message.payload.body.data),
             headers: message.payload.headers,
             method: message.payload.method,
@@ -78,18 +91,4 @@ webSocketClient.once("open", () => {
     webSocketClient.on("message", messageHandler);
 });
 
-{
-    const remotehost = (() => {
-        const protocol = Commander.protocol.split(":")[0];
-        return `${protocol}://${Commander.remotehost}/${Commander.name}`;
-    })();
-    const localhost = (() => {
-        const protocol = Commander.protocol.split(":")[2];
-        return `${protocol}://${Commander.localhost}`;
-    })();
-    const websocket = (() => {
-        const protocol = Commander.protocol.split(":")[1];
-        return `${protocol}://${Commander.remotehost}`;
-    })();
-    process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
-}
+process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
