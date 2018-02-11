@@ -20,7 +20,7 @@ import { Request } from "express";
 export interface IRegisterMessage { type: "register"; payload: string; }
 export interface IRequestMessage  { type: "request"; payload: Request; }
 export interface IResponseMessage { type: "response"; payload: AxiosResponse; }
-export interface IErrorMessage    { type: "error"; }
+export interface IErrorMessage    { type: "error"; payload: AxiosResponse; }
 export type Message         = IRegisterMessage | IRequestMessage | IResponseMessage | IErrorMessage;
 export type RawMessage      = string;
 export type MessageHandler  = (rawMessage: RawMessage) => void;
