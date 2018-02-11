@@ -18,17 +18,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const body_parser_1 = require("body-parser");
 const circular_json_1 = require("circular-json");
+const compressoin = require("compression");
 const events_1 = require("events");
 const Express = require("express");
 const database_1 = require("./database");
 exports.emitter = new events_1.EventEmitter();
 exports.application = Express();
-exports.notFoundHandler = (request, response) => {
-    response.status(404).sendFile(`${__dirname}/404.html`);
-};
 exports.applicationHandler = (request, response) => {
     if (!database_1.database[request.params.name]) {
-        exports.notFoundHandler(request, response);
+        response.status(404).sendFile(`${__dirname}/404.html`);
     }
     else {
         {
@@ -39,11 +37,16 @@ exports.applicationHandler = (request, response) => {
         const eventHandler = (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
             if (message.type === "response") {
-                response.set(message.payload.headers);
-                response.status(message.payload.status).send(message.payload.data);
+                response
+                    .set(message.payload.headers)
+                    .status(message.payload.status)
+                    .send(message.payload.data);
             }
-            else {
-                exports.notFoundHandler(request, response);
+            else if (message.type === "error") {
+                response
+                    .set(message.payload.response.headers)
+                    .status(message.payload.response.status)
+                    .send(message.payload.response.data);
             }
         };
         exports.emitter.once(`/${request.params[0]}`, eventHandler);
@@ -56,4 +59,5 @@ exports.application.all("/:name", (request, response) => {
 exports.application.get("/", (request, response) => {
     response.redirect("https://github.com/asciian/noncloud");
 });
+exports.application.use(compressoin());
 exports.application.use(body_parser_1.raw({ type: "*/*" }));
