@@ -15,8 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as BodyParser from "body-parser";
-import * as CircularJSON from "circular-json";
+import { raw } from "body-parser";
+import { parse, stringify } from "circular-json";
 import Express = require("express");
 import { database } from "./database";
 import { IRequestMessage, Message, MessageHandler, RawMessage } from "./message";
@@ -33,12 +33,12 @@ export const applicationHandler = (request: Express.Request, response: Express.R
     } else {
         {
             const requestMessage: IRequestMessage = { type: "request", payload: request };
-            const rawMessage: RawMessage = CircularJSON.stringify(requestMessage);
+            const rawMessage: RawMessage = stringify(requestMessage);
             database[request.params.name].send(rawMessage);
         }
         {
             const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
-                const message: Message = CircularJSON.parse(rawMessage);
+                const message: Message = parse(rawMessage);
                 if (message.type === "response") {
                     response.set(message.payload.headers);
                     response.status(message.payload.status).send(message.payload.data);
@@ -61,4 +61,4 @@ application.get("/", (request: Express.Request, response: Express.Response) => {
     response.redirect("https://github.com/asciian/noncloud");
 });
 
-application.use(BodyParser.raw({ type: "*/*" }));
+application.use(raw({ type: "*/*" }));
