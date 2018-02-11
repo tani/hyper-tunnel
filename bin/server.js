@@ -15,16 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-const Http = __importStar(require("http"));
+const http_1 = require("http");
 const application_1 = require("./application");
-exports.server = Http.createServer(application_1.application);
+exports.server = http_1.createServer(application_1.application);
 require("./websocket");
 exports.server.listen(process.env.PORT);

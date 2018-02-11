@@ -16,16 +16,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as Axios from "axios";
-import * as CircularJSON from "circular-json";
+import Axios, { AxiosResponse } from "axios";
+import { parse, stringify } from "circular-json";
 import Commander = require("commander");
 import Express = require("express");
-import * as Fs from "fs";
+import { readFileSync } from "fs";
 import { URL } from "url";
 import WebSocket = require("ws");
 import { IErrorMessage, IRegisterMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
 
-const buffer = Fs.readFileSync(`${__dirname}/../package.json`);
+const buffer = readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
 
 Commander
@@ -42,15 +42,15 @@ const webSocketClient = (() => {
     return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`);
 })();
 
-const successResponse = (response: Axios.AxiosResponse) => {
+const successResponse = (response: AxiosResponse) => {
     const responseMessage: IResponseMessage = { type: "response", payload: response };
-    const rawMessage = CircularJSON.stringify(responseMessage);
+    const rawMessage = stringify(responseMessage);
     webSocketClient.send(rawMessage);
 };
 
 const errorResponse = (error: any) => {
     const errorMessage: IErrorMessage = { type: "error" };
-    const rawMessage = CircularJSON.stringify(errorMessage);
+    const rawMessage = stringify(errorMessage);
     webSocketClient.send(rawMessage);
 };
 
@@ -70,10 +70,10 @@ const websocket = (() => {
 })();
 
 const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
-    const message: Message = CircularJSON.parse(rawMessage);
+    const message: Message = parse(rawMessage);
     if (message.type === "request") {
         message.payload.headers.host = new URL(localhost).host;
-        Axios.default.request({
+        Axios.request({
             baseURL: localhost,
             data: message.payload.body && Buffer.from(message.payload.body.data),
             headers: message.payload.headers,
@@ -88,7 +88,7 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
 
 webSocketClient.once("open", () => {
     const registerMessage: IRegisterMessage = { type: "register", payload: Commander.name.toString() };
-    const rawMessage: RawMessage = CircularJSON.stringify(registerMessage);
+    const rawMessage: RawMessage = stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
 });

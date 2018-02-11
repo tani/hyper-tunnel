@@ -1,20 +1,16 @@
 #!/usr/bin/env node
 "use strict";
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-const Axios = __importStar(require("axios"));
-const CircularJSON = __importStar(require("circular-json"));
+const axios_1 = __importDefault(require("axios"));
+const circular_json_1 = require("circular-json");
 const Commander = require("commander");
-const Fs = __importStar(require("fs"));
+const fs_1 = require("fs");
 const url_1 = require("url");
 const WebSocket = require("ws");
-const buffer = Fs.readFileSync(`${__dirname}/../package.json`);
+const buffer = fs_1.readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
 Commander
     .version(version, "-v, --version")
@@ -30,12 +26,12 @@ const webSocketClient = (() => {
 })();
 const successResponse = (response) => {
     const responseMessage = { type: "response", payload: response };
-    const rawMessage = CircularJSON.stringify(responseMessage);
+    const rawMessage = circular_json_1.stringify(responseMessage);
     webSocketClient.send(rawMessage);
 };
 const errorResponse = (error) => {
     const errorMessage = { type: "error" };
-    const rawMessage = CircularJSON.stringify(errorMessage);
+    const rawMessage = circular_json_1.stringify(errorMessage);
     webSocketClient.send(rawMessage);
 };
 const remotehost = (() => {
@@ -51,10 +47,10 @@ const websocket = (() => {
     return `${protocol}://${Commander.remotehost}`;
 })();
 const messageHandler = (rawMessage) => {
-    const message = CircularJSON.parse(rawMessage);
+    const message = circular_json_1.parse(rawMessage);
     if (message.type === "request") {
         message.payload.headers.host = new url_1.URL(localhost).host;
-        Axios.default.request({
+        axios_1.default.request({
             baseURL: localhost,
             data: message.payload.body && Buffer.from(message.payload.body.data),
             headers: message.payload.headers,
@@ -69,7 +65,7 @@ const messageHandler = (rawMessage) => {
 };
 webSocketClient.once("open", () => {
     const registerMessage = { type: "register", payload: Commander.name.toString() };
-    const rawMessage = CircularJSON.stringify(registerMessage);
+    const rawMessage = circular_json_1.stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
 });

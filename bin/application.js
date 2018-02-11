@@ -15,16 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-const BodyParser = __importStar(require("body-parser"));
-const CircularJSON = __importStar(require("circular-json"));
+const body_parser_1 = require("body-parser");
+const circular_json_1 = require("circular-json");
 const Express = require("express");
 const database_1 = require("./database");
 exports.application = Express();
@@ -38,12 +31,12 @@ exports.applicationHandler = (request, response) => {
     else {
         {
             const requestMessage = { type: "request", payload: request };
-            const rawMessage = CircularJSON.stringify(requestMessage);
+            const rawMessage = circular_json_1.stringify(requestMessage);
             database_1.database[request.params.name].send(rawMessage);
         }
         {
             const messageHandler = (rawMessage) => {
-                const message = CircularJSON.parse(rawMessage);
+                const message = circular_json_1.parse(rawMessage);
                 if (message.type === "response") {
                     response.set(message.payload.headers);
                     response.status(message.payload.status).send(message.payload.data);
@@ -63,4 +56,4 @@ exports.application.all("/:name", (request, response) => {
 exports.application.get("/", (request, response) => {
     response.redirect("https://github.com/asciian/noncloud");
 });
-exports.application.use(BodyParser.raw({ type: "*/*" }));
+exports.application.use(body_parser_1.raw({ type: "*/*" }));

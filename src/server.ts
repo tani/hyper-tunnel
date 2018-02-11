@@ -15,8 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as Http from "http";
+import { createServer } from "http";
 import { application } from "./application";
-export const server = Http.createServer(application);
+export const server = createServer(application);
 import "./websocket";
 server.listen(process.env.PORT);

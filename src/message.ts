@@ -14,13 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import * as Axios from "axios";
-import * as Express from "express";
-import * as WebSocket from "ws";
+import { AxiosResponse } from "axios";
+import { Request } from "express";
 
 export interface IRegisterMessage { type: "register"; payload: string; }
-export interface IRequestMessage  { type: "request"; payload: Express.Request; }
-export interface IResponseMessage { type: "response"; payload: Axios.AxiosResponse; }
+export interface IRequestMessage  { type: "request"; payload: Request; }
+export interface IResponseMessage { type: "response"; payload: AxiosResponse; }
 export interface IErrorMessage    { type: "error"; }
 export type Message         = IRegisterMessage | IRequestMessage | IResponseMessage | IErrorMessage;
 export type RawMessage      = string;

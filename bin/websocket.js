@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-const CircularJSON = __importStar(require("circular-json"));
+const circular_json_1 = require("circular-json");
 const WebSocket = __importStar(require("ws"));
 const database_1 = require("./database");
 const server_1 = require("./server");
@@ -37,7 +37,7 @@ const webSocketServer = new WebSocket.Server({
     },
 });
 const messageHandler = (socket) => (rawMessage) => {
-    const message = CircularJSON.parse(rawMessage);
+    const message = circular_json_1.parse(rawMessage);
     if (message.type === "register" && !message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
         socket.close();
     }

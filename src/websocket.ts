@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import * as CircularJSON from "circular-json";
+import { parse, stringify } from "circular-json";
 import * as WebSocket from "ws";
 import { database } from "./database";
 import { Message, MessageHandler, RawMessage } from "./message";
@@ -32,7 +32,7 @@ const webSocketServer = new WebSocket.Server({
 });
 
 const messageHandler = (socket: WebSocket) => (rawMessage: RawMessage) => {
-    const message: Message = CircularJSON.parse(rawMessage);
+    const message: Message = parse(rawMessage);
     if (message.type === "register" && !message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
         socket.close();
     } else if (message.type === "register" && database[message.payload]) {
