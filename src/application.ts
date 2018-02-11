@@ -17,6 +17,7 @@
 
 import { raw } from "body-parser";
 import { parse, stringify } from "circular-json";
+import compressoin = require("compression");
 import { EventEmitter } from "events";
 import Express = require("express");
 import { database } from "./database";
@@ -25,13 +26,9 @@ import { IRequestMessage, IResponseMessage, Message, MessageHandler, RawMessage 
 export const emitter = new EventEmitter();
 export const application = Express();
 
-export const notFoundHandler = (request: Express.Request, response: Express.Response) => {
-    response.status(404).sendFile(`${__dirname}/404.html`);
-};
-
 export const applicationHandler = (request: Express.Request, response: Express.Response) => {
     if (!database[request.params.name]) {
-        notFoundHandler(request, response);
+        response.status(404).sendFile(`${__dirname}/404.html`);
     } else {
         {
             const requestMessage: IRequestMessage = { type: "request", payload: request };
@@ -41,10 +38,15 @@ export const applicationHandler = (request: Express.Request, response: Express.R
         const eventHandler: MessageHandler = (rawMessage: RawMessage) => {
             const message = parse(rawMessage);
             if (message.type === "response") {
-                response.set(message.payload.headers);
-                response.status(message.payload.status).send(message.payload.data);
-            } else {
-                notFoundHandler(request, response);
+                response
+                    .set(message.payload.headers)
+                    .status(message.payload.status)
+                    .send(message.payload.data);
+            } else if (message.type === "error") {
+                response
+                    .set(message.payload.response.headers)
+                    .status(message.payload.response.status)
+                    .send(message.payload.response.data);
             }
         };
         emitter.once(`/${request.params[0]}`, eventHandler);
@@ -60,5 +62,5 @@ application.all("/:name", (request: Express.Request, response: Express.Response)
 application.get("/", (request: Express.Request, response: Express.Response) => {
     response.redirect("https://github.com/asciian/noncloud");
 });
-
+application.use(compressoin());
 application.use(raw({ type: "*/*" }));
