@@ -56,7 +56,7 @@ const messageHandler = (rawMessage) => {
             headers: message.payload.headers,
             method: message.payload.method,
             params: message.payload.query,
-            url: message.payload.params[0] || "/",
+            url: `/${message.payload.params[0]}`,
         }).then(successResponse).catch(errorResponse);
     }
     else {
