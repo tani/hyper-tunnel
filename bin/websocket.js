@@ -25,6 +25,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const circular_json_1 = require("circular-json");
 const WebSocket = __importStar(require("ws"));
+const application_1 = require("./application");
 const database_1 = require("./database");
 const server_1 = require("./server");
 const webSocketServer = new WebSocket.Server({
@@ -38,22 +39,24 @@ const webSocketServer = new WebSocket.Server({
 });
 const messageHandler = (socket) => (rawMessage) => {
     const message = circular_json_1.parse(rawMessage);
-    if (message.type === "register" && !message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
-        socket.close();
-    }
-    else if (message.type === "register" && database_1.database[message.payload]) {
-        socket.close();
-    }
-    else if (message.type !== "register") {
-        socket.close();
-    }
-    else {
+    if (message.type === "register") {
+        if (!message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
+            socket.close();
+        }
+        if (database_1.database[message.payload]) {
+            socket.close();
+        }
         database_1.database[message.payload] = socket;
         database_1.database[message.payload].on("close", () => {
             delete database_1.database[message.payload];
         });
     }
+    else if (message.type === "response" || message.type === "error") {
+        const url = message.payload.config.url;
+        const baseURL = message.payload.config.baseURL;
+        application_1.emitter.emit(url.replace(baseURL, ""), rawMessage);
+    }
 };
 webSocketServer.on("connection", (socket) => {
-    socket.once("message", messageHandler(socket));
+    socket.on("message", messageHandler(socket));
 });

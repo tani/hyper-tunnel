@@ -23,7 +23,7 @@ import Express = require("express");
 import { readFileSync } from "fs";
 import { URL } from "url";
 import WebSocket = require("ws");
-import { IErrorMessage, IRegisterMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
+import { IErrorMessage, IRegisterMessage, IRequestMessage, IResponseMessage, MessageHandler, RawMessage } from "./message";
 
 const buffer = readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
@@ -49,7 +49,7 @@ const successResponse = (response: AxiosResponse) => {
 };
 
 const errorResponse = (error: any) => {
-    const errorMessage: IErrorMessage = { type: "error" };
+    const errorMessage: IErrorMessage = { type: "error", payload: error};
     const rawMessage = stringify(errorMessage);
     webSocketClient.send(rawMessage);
 };
@@ -70,20 +70,16 @@ const websocket = (() => {
 })();
 
 const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
-    const message: Message = parse(rawMessage);
-    if (message.type === "request") {
-        message.payload.headers.host = new URL(localhost).host;
-        Axios.request({
-            baseURL: localhost,
-            data: message.payload.body && Buffer.from(message.payload.body.data),
-            headers: message.payload.headers,
-            method: message.payload.method,
-            params: message.payload.query,
-            url: `/${message.payload.params[0]}`,
-        }).then(successResponse).catch(errorResponse);
-    } else {
-        errorResponse(null);
-    }
+    const requestResponse: IRequestMessage = parse(rawMessage);
+    requestResponse.payload.headers.host = new URL(localhost).host;
+    Axios.request({
+        baseURL: localhost,
+        data: requestResponse.payload.body && Buffer.from(requestResponse.payload.body.data),
+        headers: requestResponse.payload.headers,
+        method: requestResponse.payload.method,
+        params: requestResponse.payload.query,
+        url: `/${requestResponse.payload.params[0]}`,
+    }).then(successResponse).catch(errorResponse);
 };
 
 webSocketClient.once("open", () => {

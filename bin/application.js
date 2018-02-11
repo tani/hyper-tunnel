@@ -18,8 +18,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const body_parser_1 = require("body-parser");
 const circular_json_1 = require("circular-json");
+const events_1 = require("events");
 const Express = require("express");
 const database_1 = require("./database");
+exports.emitter = new events_1.EventEmitter();
 exports.application = Express();
 exports.notFoundHandler = (request, response) => {
     response.status(404).sendFile(`${__dirname}/404.html`);
@@ -34,26 +36,17 @@ exports.applicationHandler = (request, response) => {
             const rawMessage = circular_json_1.stringify(requestMessage);
             database_1.database[request.params.name].send(rawMessage);
         }
-        {
-            const messageHandler = (rawMessage) => {
-                const message = circular_json_1.parse(rawMessage);
-                if (message.type === "response") {
-                    const url = message.payload.config.url;
-                    const baseURL = message.payload.config.baseURL;
-                    if (url.replace(baseURL, "") === `/${request.params[0]}`) {
-                        response.set(message.payload.headers);
-                        response.status(message.payload.status).send(message.payload.data);
-                    }
-                    else {
-                        database_1.database[request.params.name].once("message", messageHandler);
-                    }
-                }
-                else {
-                    exports.notFoundHandler(request, response);
-                }
-            };
-            database_1.database[request.params.name].once("message", messageHandler);
-        }
+        const eventHandler = (rawMessage) => {
+            const message = circular_json_1.parse(rawMessage);
+            if (message.type === "response") {
+                response.set(message.payload.headers);
+                response.status(message.payload.status).send(message.payload.data);
+            }
+            else {
+                exports.notFoundHandler(request, response);
+            }
+        };
+        exports.emitter.once(`/${request.params[0]}`, eventHandler);
     }
 };
 exports.application.all("/:name/*", exports.applicationHandler);

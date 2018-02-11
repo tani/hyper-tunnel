@@ -30,7 +30,7 @@ const successResponse = (response) => {
     webSocketClient.send(rawMessage);
 };
 const errorResponse = (error) => {
-    const errorMessage = { type: "error" };
+    const errorMessage = { type: "error", payload: error };
     const rawMessage = circular_json_1.stringify(errorMessage);
     webSocketClient.send(rawMessage);
 };
@@ -47,21 +47,16 @@ const websocket = (() => {
     return `${protocol}://${Commander.remotehost}`;
 })();
 const messageHandler = (rawMessage) => {
-    const message = circular_json_1.parse(rawMessage);
-    if (message.type === "request") {
-        message.payload.headers.host = new url_1.URL(localhost).host;
-        axios_1.default.request({
-            baseURL: localhost,
-            data: message.payload.body && Buffer.from(message.payload.body.data),
-            headers: message.payload.headers,
-            method: message.payload.method,
-            params: message.payload.query,
-            url: `/${message.payload.params[0]}`,
-        }).then(successResponse).catch(errorResponse);
-    }
-    else {
-        errorResponse(null);
-    }
+    const requestResponse = circular_json_1.parse(rawMessage);
+    requestResponse.payload.headers.host = new url_1.URL(localhost).host;
+    axios_1.default.request({
+        baseURL: localhost,
+        data: requestResponse.payload.body && Buffer.from(requestResponse.payload.body.data),
+        headers: requestResponse.payload.headers,
+        method: requestResponse.payload.method,
+        params: requestResponse.payload.query,
+        url: `/${requestResponse.payload.params[0]}`,
+    }).then(successResponse).catch(errorResponse);
 };
 webSocketClient.once("open", () => {
     const registerMessage = { type: "register", payload: Commander.name.toString() };
