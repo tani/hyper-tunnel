@@ -38,8 +38,15 @@ exports.applicationHandler = (request, response) => {
             const messageHandler = (rawMessage) => {
                 const message = circular_json_1.parse(rawMessage);
                 if (message.type === "response") {
-                    response.set(message.payload.headers);
-                    response.status(message.payload.status).send(message.payload.data);
+                    const url = message.payload.config.url;
+                    const baseURL = message.payload.config.baseURL;
+                    if (url.replace(baseURL, "") === `/${request.params[0]}`) {
+                        response.set(message.payload.headers);
+                        response.status(message.payload.status).send(message.payload.data);
+                    }
+                    else {
+                        database_1.database[request.params.name].once("message", messageHandler);
+                    }
                 }
                 else {
                     exports.notFoundHandler(request, response);

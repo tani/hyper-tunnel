@@ -40,8 +40,14 @@ export const applicationHandler = (request: Express.Request, response: Express.R
             const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
                 const message: Message = parse(rawMessage);
                 if (message.type === "response") {
-                    response.set(message.payload.headers);
-                    response.status(message.payload.status).send(message.payload.data);
+                    const url = message.payload.config.url as string;
+                    const baseURL = message.payload.config.baseURL as string;
+                    if (url.replace(baseURL, "") === `/${request.params[0]}`) {
+                        response.set(message.payload.headers);
+                        response.status(message.payload.status).send(message.payload.data);
+                    } else {
+                        database[request.params.name].once("message", messageHandler);
+                    }
                 } else {
                     notFoundHandler(request, response);
                 }
