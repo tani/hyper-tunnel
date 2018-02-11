@@ -16,7 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Axios, { AxiosResponse } from "axios";
+import Axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { parse, stringify } from "circular-json";
 import Commander = require("commander");
 import Express = require("express");
@@ -42,18 +42,6 @@ const webSocketClient = (() => {
     return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`);
 })();
 
-const successResponse = (response: AxiosResponse) => {
-    const responseMessage: IResponseMessage = { type: "response", payload: response };
-    const rawMessage = stringify(responseMessage);
-    webSocketClient.send(rawMessage);
-};
-
-const errorResponse = (error: any) => {
-    const errorMessage: IErrorMessage = { type: "error", payload: error};
-    const rawMessage = stringify(errorMessage);
-    webSocketClient.send(rawMessage);
-};
-
 const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
     return `${protocol}://${Commander.remotehost}/${Commander.name}`;
@@ -70,16 +58,23 @@ const websocket = (() => {
 })();
 
 const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
-    const requestResponse: IRequestMessage = parse(rawMessage);
-    requestResponse.payload.headers.host = new URL(localhost).host;
-    Axios.request({
+    const requestMessage: IRequestMessage = parse(rawMessage);
+    requestMessage.payload.headers.host = new URL(localhost).host;
+    const config: AxiosRequestConfig = {
         baseURL: localhost,
-        data: requestResponse.payload.body && Buffer.from(requestResponse.payload.body.data),
-        headers: requestResponse.payload.headers,
-        method: requestResponse.payload.method,
-        params: requestResponse.payload.query,
-        url: `/${requestResponse.payload.params[0]}`,
-    }).then(successResponse).catch(errorResponse);
+        data: requestMessage.payload.body && Buffer.from(requestMessage.payload.body.data),
+        headers: requestMessage.payload.headers,
+        method: requestMessage.payload.method,
+        params: requestMessage.payload.query,
+        url: `/${requestMessage.payload.params[0]}`,
+    };
+    Axios.request(config).then((payload: AxiosResponse) => {
+        const responseMessage: IResponseMessage = { type: "response", payload };
+        webSocketClient.send(stringify(responseMessage));
+    }).catch((payload: any) => {
+        const errorMessage: IErrorMessage = { type: "error", payload };
+        webSocketClient.send(stringify(errorMessage));
+    });
 };
 
 webSocketClient.once("open", () => {
