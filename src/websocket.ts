@@ -32,26 +32,26 @@ const webSocketServer = new WebSocket.Server({
     },
 });
 
-const messageHandler = (socket: WebSocket) => (rawMessage: RawMessage) => {
-    const message: Message = parse(rawMessage);
-    if (message.type === "register") {
-        if (!message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
-            socket.close();
+webSocketServer.on("connection", (socket: WebSocket) => {
+    const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
+        const message: Message = parse(rawMessage);
+        if (message.type === "register") {
+            if (!message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
+                return socket.close();
+            }
+            if (database[message.payload]) {
+                return socket.close();
+            }
+            database[message.payload] = socket;
+            database[message.payload].on("close", () => {
+                delete database[message.payload];
+            });
         }
-        if (database[message.payload]) {
-            socket.close();
-        }
-        database[message.payload] = socket;
-        database[message.payload].on("close", () => {
-            delete database[message.payload];
-        });
-    } else if (message.type === "response" || message.type === "error") {
+        if (message.type === "response" || message.type === "error") {
             const url = message.payload.config.url as string;
             const baseURL = message.payload.config.baseURL as string;
             emitter.emit(url.replace(baseURL, ""), rawMessage);
-    }
-};
-
-webSocketServer.on("connection", (socket: WebSocket) => {
-    socket.on("message", messageHandler(socket));
+        }
+    };
+    socket.on("message", messageHandler);
 });

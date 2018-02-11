@@ -24,16 +24,6 @@ const webSocketClient = (() => {
     const protocol = Commander.protocol.split(":")[1];
     return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`);
 })();
-const successResponse = (response) => {
-    const responseMessage = { type: "response", payload: response };
-    const rawMessage = circular_json_1.stringify(responseMessage);
-    webSocketClient.send(rawMessage);
-};
-const errorResponse = (error) => {
-    const errorMessage = { type: "error", payload: error };
-    const rawMessage = circular_json_1.stringify(errorMessage);
-    webSocketClient.send(rawMessage);
-};
 const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
     return `${protocol}://${Commander.remotehost}/${Commander.name}`;
@@ -47,16 +37,23 @@ const websocket = (() => {
     return `${protocol}://${Commander.remotehost}`;
 })();
 const messageHandler = (rawMessage) => {
-    const requestResponse = circular_json_1.parse(rawMessage);
-    requestResponse.payload.headers.host = new url_1.URL(localhost).host;
-    axios_1.default.request({
+    const requestMessage = circular_json_1.parse(rawMessage);
+    requestMessage.payload.headers.host = new url_1.URL(localhost).host;
+    const config = {
         baseURL: localhost,
-        data: requestResponse.payload.body && Buffer.from(requestResponse.payload.body.data),
-        headers: requestResponse.payload.headers,
-        method: requestResponse.payload.method,
-        params: requestResponse.payload.query,
-        url: `/${requestResponse.payload.params[0]}`,
-    }).then(successResponse).catch(errorResponse);
+        data: requestMessage.payload.body && Buffer.from(requestMessage.payload.body.data),
+        headers: requestMessage.payload.headers,
+        method: requestMessage.payload.method,
+        params: requestMessage.payload.query,
+        url: `/${requestMessage.payload.params[0]}`,
+    };
+    axios_1.default.request(config).then((payload) => {
+        const responseMessage = { type: "response", payload };
+        webSocketClient.send(circular_json_1.stringify(responseMessage));
+    }).catch((payload) => {
+        const errorMessage = { type: "error", payload };
+        webSocketClient.send(circular_json_1.stringify(errorMessage));
+    });
 };
 webSocketClient.once("open", () => {
     const registerMessage = { type: "register", payload: Commander.name.toString() };
