@@ -40,36 +40,41 @@ const websocket = (() => {
     return `${protocol}://${Commander.remotehost}`;
 })();
 const messageHandler = (rawMessage) => {
-    const requestMessage = circular_json_1.parse(rawMessage);
-    requestMessage.payload.headers.host = new url_1.URL(localhost).host;
-    const config = {
-        baseURL: localhost,
-        data: requestMessage.payload.body,
-        headers: requestMessage.payload.headers,
-        method: requestMessage.payload.method,
-        params: requestMessage.payload.query,
-        url: `/${requestMessage.payload.params[0]}`,
-    };
-    axios_1.default.request(config).then((payload) => {
-        const responseMessage = { type: "response", payload };
-        webSocketClient.send(circular_json_1.stringify(responseMessage));
-    }).catch((payload) => {
-        const errorMessage = { type: "error", payload };
-        webSocketClient.send(circular_json_1.stringify(errorMessage));
-    });
+    const message = circular_json_1.parse(rawMessage);
+    if (message.type === "exit") {
+        process.stdout.write(message.payload + "\n");
+        process.exit();
+    }
+    else if (message.type === "request") {
+        message.payload.headers.host = new url_1.URL(localhost).host;
+        const config = {
+            baseURL: localhost,
+            data: message.payload.body,
+            headers: message.payload.headers,
+            method: message.payload.method,
+            params: message.payload.query,
+            url: `/${message.payload.params[0]}`,
+        };
+        axios_1.default.request(config).then((payload) => {
+            const responseMessage = { type: "response", payload };
+            webSocketClient.send(circular_json_1.stringify(responseMessage));
+        }).catch((payload) => {
+            const errorMessage = { type: "error", payload };
+            webSocketClient.send(circular_json_1.stringify(errorMessage));
+        });
+    }
 };
 const openHandler = () => {
     const registerMessage = { type: "register", payload: Commander.name.toString() };
     const rawMessage = circular_json_1.stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
-    setInterval(() => { webSocketClient.ping(); }, 60 * 1000);
+    process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
 };
 const closeHandler = () => {
     webSocketClient = makeWebSocketClient();
-    webSocketClient.once("open", openHandler);
-    webSocketClient.once("close", closeHandler);
+    webSocketClient.on("open", openHandler);
+    webSocketClient.on("close", closeHandler);
 };
 webSocketClient.on("open", openHandler);
 webSocketClient.on("close", closeHandler);
-process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
