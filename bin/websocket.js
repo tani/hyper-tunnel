@@ -29,6 +29,7 @@ const application_1 = require("./application");
 const database_1 = require("./database");
 const server_1 = require("./server");
 const webSocketServer = new WebSocket.Server({
+    perMessageDeflate: true,
     server: server_1.server,
     verifyClient: ({ req, secure }) => {
         if (secure || process.env.ALLOW_UNENCRYPTED_CONNECTION) {

@@ -22,7 +22,9 @@ Commander
     .parse(process.argv);
 const webSocketClient = (() => {
     const protocol = Commander.protocol.split(":")[1];
-    return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`);
+    return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`, {
+        perMessageDeflate: true,
+    });
 })();
 const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
@@ -41,7 +43,7 @@ const messageHandler = (rawMessage) => {
     requestMessage.payload.headers.host = new url_1.URL(localhost).host;
     const config = {
         baseURL: localhost,
-        data: requestMessage.payload.body && Buffer.from(requestMessage.payload.body.data),
+        data: requestMessage.payload.body,
         headers: requestMessage.payload.headers,
         method: requestMessage.payload.method,
         params: requestMessage.payload.query,
@@ -60,5 +62,6 @@ webSocketClient.once("open", () => {
     const rawMessage = circular_json_1.stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
+    setInterval(() => { webSocketClient.ping(); }, 60 * 1000);
 });
 process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);

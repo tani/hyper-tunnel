@@ -23,6 +23,7 @@ import { Message, MessageHandler, RawMessage } from "./message";
 import { server } from "./server";
 
 const webSocketServer = new WebSocket.Server({
+    perMessageDeflate: true,
     server,
     verifyClient: ({ req, secure }: { req: any, secure: boolean }) => {
         if (secure || process.env.ALLOW_UNENCRYPTED_CONNECTION) {
