@@ -43,10 +43,18 @@ webSocketServer.on("connection", (socket) => {
         const message = circular_json_1.parse(rawMessage);
         if (message.type === "register") {
             if (!message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
-                return socket.close();
+                const exitMessage = {
+                    payload: "Name has to be between 4 and 32 characters long.",
+                    type: "exit",
+                };
+                return socket.send(circular_json_1.stringify(exitMessage));
             }
             if (database_1.database[message.payload]) {
-                return socket.close();
+                const exitMessage = {
+                    payload: "Name is aleady used by other account.",
+                    type: "exit",
+                };
+                return socket.send(circular_json_1.stringify(exitMessage));
             }
             database_1.database[message.payload] = socket;
             database_1.database[message.payload].on("close", () => {

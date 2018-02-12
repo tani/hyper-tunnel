@@ -22,7 +22,7 @@ import Commander = require("commander");
 import { readFileSync } from "fs";
 import { URL } from "url";
 import WebSocket = require("ws");
-import { IErrorMessage, IRegisterMessage, IRequestMessage, IResponseMessage, MessageHandler, RawMessage } from "./message";
+import { IErrorMessage, IRegisterMessage, IRequestMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
 
 const buffer = readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
@@ -61,23 +61,28 @@ const websocket = (() => {
 })();
 
 const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
-    const requestMessage: IRequestMessage = parse(rawMessage);
-    requestMessage.payload.headers.host = new URL(localhost).host;
-    const config: AxiosRequestConfig = {
-        baseURL: localhost,
-        data: requestMessage.payload.body,
-        headers: requestMessage.payload.headers,
-        method: requestMessage.payload.method,
-        params: requestMessage.payload.query,
-        url: `/${requestMessage.payload.params[0]}`,
-    };
-    Axios.request(config).then((payload: AxiosResponse) => {
-        const responseMessage: IResponseMessage = { type: "response", payload };
-        webSocketClient.send(stringify(responseMessage));
-    }).catch((payload: any) => {
-        const errorMessage: IErrorMessage = { type: "error", payload };
-        webSocketClient.send(stringify(errorMessage));
-    });
+    const message: Message = parse(rawMessage);
+    if (message.type === "exit") {
+        process.stdout.write(message.payload + "\n");
+        process.exit();
+    } else if (message.type === "request") {
+        message.payload.headers.host = new URL(localhost).host;
+        const config: AxiosRequestConfig = {
+            baseURL: localhost,
+            data: message.payload.body,
+            headers: message.payload.headers,
+            method: message.payload.method,
+            params: message.payload.query,
+            url: `/${message.payload.params[0]}`,
+        };
+        Axios.request(config).then((payload: AxiosResponse) => {
+            const responseMessage: IResponseMessage = { type: "response", payload };
+            webSocketClient.send(stringify(responseMessage));
+        }).catch((payload: any) => {
+            const errorMessage: IErrorMessage = { type: "error", payload };
+            webSocketClient.send(stringify(errorMessage));
+        });
+    }
 };
 
 const openHandler = () => {
@@ -85,17 +90,14 @@ const openHandler = () => {
     const rawMessage: RawMessage = stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
-    setInterval(() => { webSocketClient.ping(); }, 60 * 1000);
+    process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
 };
 
 const closeHandler = () => {
     webSocketClient = makeWebSocketClient();
-    webSocketClient.once("open", openHandler);
-    webSocketClient.once("close", closeHandler);
+    webSocketClient.on("open", openHandler);
+    webSocketClient.on("close", closeHandler);
 };
 
 webSocketClient.on("open", openHandler);
-
 webSocketClient.on("close", closeHandler);
-
-process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);

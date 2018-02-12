@@ -16,11 +16,11 @@
  */
 import { AxiosResponse } from "axios";
 import { Request } from "express";
-
 export interface IRegisterMessage { type: "register"; payload: string; }
 export interface IRequestMessage  { type: "request"; payload: Request; }
 export interface IResponseMessage { type: "response"; payload: AxiosResponse; }
 export interface IErrorMessage    { type: "error"; payload: AxiosResponse; }
-export type Message         = IRegisterMessage | IRequestMessage | IResponseMessage | IErrorMessage;
+export interface IExitMessage { type: "exit"; payload: string; }
+export type Message         = IRegisterMessage | IRequestMessage | IResponseMessage | IErrorMessage | IExitMessage;
 export type RawMessage      = string;
 export type MessageHandler  = (rawMessage: RawMessage) => void;
