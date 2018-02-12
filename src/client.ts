@@ -19,7 +19,6 @@
 import Axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { parse, stringify } from "circular-json";
 import Commander = require("commander");
-import Express = require("express");
 import { readFileSync } from "fs";
 import { URL } from "url";
 import WebSocket = require("ws");
@@ -39,7 +38,9 @@ Commander
 
 const webSocketClient = (() => {
     const protocol = Commander.protocol.split(":")[1];
-    return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`);
+    return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`, {
+        perMessageDeflate: true,
+    });
 })();
 
 const remotehost = (() => {
@@ -62,7 +63,7 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
     requestMessage.payload.headers.host = new URL(localhost).host;
     const config: AxiosRequestConfig = {
         baseURL: localhost,
-        data: requestMessage.payload.body && Buffer.from(requestMessage.payload.body.data),
+        data: requestMessage.payload.body,
         headers: requestMessage.payload.headers,
         method: requestMessage.payload.method,
         params: requestMessage.payload.query,
@@ -82,6 +83,7 @@ webSocketClient.once("open", () => {
     const rawMessage: RawMessage = stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
+    setInterval(() => { webSocketClient.ping(); }, 60 * 1000);
 });
 
 process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
