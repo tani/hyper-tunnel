@@ -36,12 +36,14 @@ Commander
     .option("-p, --protocol <remotehost:websocket:localhost>", "use this protocols", "https:wss:http")
     .parse(process.argv);
 
-const webSocketClient = (() => {
+const makeWebSocketClient = () => {
     const protocol = Commander.protocol.split(":")[1];
     return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`, {
         perMessageDeflate: true,
     });
-})();
+};
+
+let webSocketClient = makeWebSocketClient();
 
 const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
@@ -78,12 +80,22 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
     });
 };
 
-webSocketClient.once("open", () => {
+const openHandler = () => {
     const registerMessage: IRegisterMessage = { type: "register", payload: Commander.name.toString() };
     const rawMessage: RawMessage = stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
     setInterval(() => { webSocketClient.ping(); }, 60 * 1000);
-});
+};
+
+const closeHandler = () => {
+    webSocketClient = makeWebSocketClient();
+    webSocketClient.once("open", openHandler);
+    webSocketClient.once("close", closeHandler);
+};
+
+webSocketClient.on("open", openHandler);
+
+webSocketClient.on("close", closeHandler);
 
 process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
