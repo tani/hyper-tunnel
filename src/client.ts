@@ -73,13 +73,29 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
             headers: message.payload.headers,
             method: message.payload.method,
             params: message.payload.query,
+            responseType: "arraybuffer",
             url: `/${message.payload.params[0]}`,
         };
         Axios.request(config).then((payload: AxiosResponse) => {
-            const responseMessage: IResponseMessage = { type: "response", payload };
+            const responseMessage: IResponseMessage = {
+                payload: {
+                    ...payload,
+                    data: Buffer.from(payload.data).toString("base64"),
+                },
+                type: "response",
+            };
             webSocketClient.send(stringify(responseMessage));
         }).catch((payload: any) => {
-            const errorMessage: IErrorMessage = { type: "error", payload };
+            const errorMessage: IErrorMessage = {
+                payload: {
+                    ...payload,
+                    response: {
+                        ...payload.response,
+                        data: Buffer.from(payload.response.data).toString("base64"),
+                    },
+                },
+                type: "error",
+            };
             webSocketClient.send(stringify(errorMessage));
         });
     }

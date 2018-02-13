@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node bin/server.js",
+    "test:server": "ALLOW_UNENCRYPTED_CONNECTION=1 PASSWORD=pass USERNAME=user PORT=4000 npm start",
+    "test:client": "node bin/client.js -a user:pass -n test -l localhost:8000 -r localhost:4000 -p http:ws:http",
     "build": "tsc"
   },
   "bin": "bin/client.js",
