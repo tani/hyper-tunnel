@@ -88,11 +88,8 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
         }).catch((payload: any) => {
             const errorMessage: IErrorMessage = {
                 payload: {
-                    ...payload,
-                    response: {
-                        ...payload.response,
-                        data: Buffer.from(payload.response.data).toString("base64"),
-                    },
+                    ...payload.response,
+                    data: Buffer.from(payload.response.data).toString("base64"),
                 },
                 type: "error",
             };
