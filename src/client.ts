@@ -23,6 +23,7 @@ import { readFileSync } from "fs";
 import { URL } from "url";
 import WebSocket = require("ws");
 import { IErrorMessage, IRegisterMessage, IRequestMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
+import { request } from "http";
 
 const buffer = readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
@@ -78,6 +79,7 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
         };
         Axios.request(config).then((payload: AxiosResponse) => {
             const responseMessage: IResponseMessage = {
+                identifier: message.identifier,
                 payload: {
                     ...payload,
                     data: Buffer.from(payload.data).toString("base64"),
@@ -87,6 +89,7 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
             webSocketClient.send(stringify(responseMessage));
         }).catch((payload: any) => {
             const errorMessage: IErrorMessage = {
+                identifier: message.identifier,
                 payload: {
                     ...payload.response,
                     data: Buffer.from(payload.response.data).toString("base64"),

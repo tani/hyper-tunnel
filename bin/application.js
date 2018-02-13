@@ -21,6 +21,7 @@ const circular_json_1 = require("circular-json");
 const compressoin = require("compression");
 const events_1 = require("events");
 const Express = require("express");
+const UUID = require("uuid/v1");
 const database_1 = require("./database");
 exports.emitter = new events_1.EventEmitter();
 exports.application = Express();
@@ -29,8 +30,9 @@ exports.applicationHandler = (request, response) => {
         response.status(404).sendFile(`${__dirname}/404.html`);
     }
     else {
+        const identifier = UUID();
         {
-            const requestMessage = { type: "request", payload: request };
+            const requestMessage = { identifier, type: "request", payload: request };
             const rawMessage = circular_json_1.stringify(requestMessage);
             database_1.database[request.params.name].send(rawMessage);
         }
@@ -43,7 +45,7 @@ exports.applicationHandler = (request, response) => {
                     .send(Buffer.from(message.payload.data, "base64"));
             }
         };
-        exports.emitter.once(`/${request.params[0]}`, eventHandler);
+        exports.emitter.once(`${identifier}/${request.params[0]}`, eventHandler);
     }
 };
 exports.application.all("/:name/*", exports.applicationHandler);

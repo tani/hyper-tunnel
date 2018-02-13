@@ -20,8 +20,10 @@ import { parse, stringify } from "circular-json";
 import compressoin = require("compression");
 import { EventEmitter } from "events";
 import Express = require("express");
+import UUID = require("uuid/v1");
 import { database } from "./database";
 import { IRequestMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
+import { checkServerIdentity } from "tls";
 
 export const emitter = new EventEmitter();
 export const application = Express();
@@ -30,8 +32,9 @@ export const applicationHandler = (request: Express.Request, response: Express.R
     if (!database[request.params.name]) {
         response.status(404).sendFile(`${__dirname}/404.html`);
     } else {
+        const identifier = UUID();
         {
-            const requestMessage: IRequestMessage = { type: "request", payload: request };
+            const requestMessage: IRequestMessage = { identifier, type: "request", payload: request };
             const rawMessage: RawMessage = stringify(requestMessage);
             database[request.params.name].send(rawMessage);
         }
@@ -44,7 +47,7 @@ export const applicationHandler = (request: Express.Request, response: Express.R
                     .send(Buffer.from(message.payload.data, "base64"));
             }
         };
-        emitter.once(`/${request.params[0]}`, eventHandler);
+        emitter.once(`${identifier}/${request.params[0]}`, eventHandler);
     }
 };
 

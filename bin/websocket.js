@@ -64,7 +64,7 @@ webSocketServer.on("connection", (socket) => {
         if (message.type === "response" || message.type === "error") {
             const url = message.payload.config.url;
             const baseURL = message.payload.config.baseURL;
-            application_1.emitter.emit(url.replace(baseURL, ""), rawMessage);
+            application_1.emitter.emit(`${message.identifier}${url.replace(baseURL, "")}`, rawMessage);
         }
     };
     socket.on("message", messageHandler);
