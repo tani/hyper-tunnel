@@ -64,7 +64,7 @@ const messageHandler = (rawMessage) => {
             webSocketClient.send(circular_json_1.stringify(responseMessage));
         }).catch((payload) => {
             const errorMessage = {
-                payload: Object.assign({}, payload, { response: Object.assign({}, payload.response, { data: Buffer.from(payload.response.data).toString("base64") }) }),
+                payload: Object.assign({}, payload.response, { data: Buffer.from(payload.response.data).toString("base64") }),
                 type: "error",
             };
             webSocketClient.send(circular_json_1.stringify(errorMessage));

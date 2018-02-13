@@ -36,17 +36,12 @@ export const applicationHandler = (request: Express.Request, response: Express.R
             database[request.params.name].send(rawMessage);
         }
         const eventHandler: MessageHandler = (rawMessage: RawMessage) => {
-            const message = parse(rawMessage);
-            if (message.type === "response") {
+            const message: Message = parse(rawMessage);
+            if (message.type === "response" || message.type === "error") {
                 response
                     .set(message.payload.headers)
                     .status(message.payload.status)
                     .send(Buffer.from(message.payload.data, "base64"));
-            } else if (message.type === "error") {
-                response
-                    .set(message.payload.response.headers)
-                    .status(message.payload.response.status)
-                    .send(Buffer.from(message.payload.response.data, "base64"));
             }
         };
         emitter.once(`/${request.params[0]}`, eventHandler);

@@ -36,17 +36,11 @@ exports.applicationHandler = (request, response) => {
         }
         const eventHandler = (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
-            if (message.type === "response") {
+            if (message.type === "response" || message.type === "error") {
                 response
                     .set(message.payload.headers)
                     .status(message.payload.status)
                     .send(Buffer.from(message.payload.data, "base64"));
-            }
-            else if (message.type === "error") {
-                response
-                    .set(message.payload.response.headers)
-                    .status(message.payload.response.status)
-                    .send(Buffer.from(message.payload.response.data, "base64"));
             }
         };
         exports.emitter.once(`/${request.params[0]}`, eventHandler);
