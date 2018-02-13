@@ -41,12 +41,12 @@ export const applicationHandler = (request: Express.Request, response: Express.R
                 response
                     .set(message.payload.headers)
                     .status(message.payload.status)
-                    .send(message.payload.data);
+                    .send(Buffer.from(message.payload.data, "base64"));
             } else if (message.type === "error") {
                 response
                     .set(message.payload.response.headers)
                     .status(message.payload.response.status)
-                    .send(message.payload.response.data);
+                    .send(Buffer.from(message.payload.response.data, "base64"));
             }
         };
         emitter.once(`/${request.params[0]}`, eventHandler);

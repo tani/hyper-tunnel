@@ -53,13 +53,20 @@ const messageHandler = (rawMessage) => {
             headers: message.payload.headers,
             method: message.payload.method,
             params: message.payload.query,
+            responseType: "arraybuffer",
             url: `/${message.payload.params[0]}`,
         };
         axios_1.default.request(config).then((payload) => {
-            const responseMessage = { type: "response", payload };
+            const responseMessage = {
+                payload: Object.assign({}, payload, { data: Buffer.from(payload.data).toString("base64") }),
+                type: "response",
+            };
             webSocketClient.send(circular_json_1.stringify(responseMessage));
         }).catch((payload) => {
-            const errorMessage = { type: "error", payload };
+            const errorMessage = {
+                payload: Object.assign({}, payload, { response: Object.assign({}, payload.response, { data: Buffer.from(payload.response.data).toString("base64") }) }),
+                type: "error",
+            };
             webSocketClient.send(circular_json_1.stringify(errorMessage));
         });
     }
