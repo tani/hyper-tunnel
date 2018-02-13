@@ -58,12 +58,14 @@ const messageHandler = (rawMessage) => {
         };
         axios_1.default.request(config).then((payload) => {
             const responseMessage = {
+                identifier: message.identifier,
                 payload: Object.assign({}, payload, { data: Buffer.from(payload.data).toString("base64") }),
                 type: "response",
             };
             webSocketClient.send(circular_json_1.stringify(responseMessage));
         }).catch((payload) => {
             const errorMessage = {
+                identifier: message.identifier,
                 payload: Object.assign({}, payload.response, { data: Buffer.from(payload.response.data).toString("base64") }),
                 type: "error",
             };
