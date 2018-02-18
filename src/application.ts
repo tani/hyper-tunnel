@@ -39,10 +39,10 @@ export const applicationHandler = (request: Express.Request, response: Express.R
         }
         const eventHandler: MessageHandler = (rawMessage: RawMessage) => {
             const message: Message = parse(rawMessage);
-            if (message.type === "response" || message.type === "error") {
+            if (message.type === "response") {
                 response
                     .set(message.payload.headers)
-                    .status(message.payload.status)
+                    .status(message.payload.statusCode)
                     .send(Buffer.from(message.payload.data, "base64"));
             }
         };

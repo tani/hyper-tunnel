@@ -43,7 +43,7 @@ webSocketServer.on("connection", (socket) => {
         if (message.type === "register") {
             connection_1.connection.socket = socket;
         }
-        if (message.type === "response" || message.type === "error") {
+        if (message.type === "response") {
             application_1.emitter.emit(message.identifier, rawMessage);
         }
     };

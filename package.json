@@ -16,7 +16,6 @@
   "author": "TANIGUCHI Masaya",
   "license": "GPL",
   "dependencies": {
-    "axios": "^0.17.1",
     "body-parser": "^1.18.2",
     "circular-json": "^0.5.1",
     "commander": "^2.14.1",
@@ -26,7 +25,6 @@
     "ws": "^4.0.0"
   },
   "devDependencies": {
-    "@types/axios": "^0.14.0",
     "@types/body-parser": "^1.16.8",
     "@types/circular-json": "^0.4.0",
     "@types/commander": "^2.12.2",

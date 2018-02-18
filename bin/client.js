@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-const axios_1 = __importDefault(require("axios"));
 const circular_json_1 = require("circular-json");
 const Commander = require("commander");
 const fs_1 = require("fs");
-const url_1 = require("url");
+const http_1 = require("http");
 const WebSocket = require("ws");
 const buffer = fs_1.readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
@@ -20,24 +16,11 @@ Commander
     .option("-p, --protocol <remotehost:websocket:localhost>", "use this protocols", "https:wss:http")
     .parse(process.argv);
 const makeWebSocketClient = () => {
-    const protocol = Commander.protocol.split(":")[1];
-    return new WebSocket(`${protocol}://${Commander.authorization}@${Commander.remotehost}`, {
+    return new WebSocket(`${Commander.protocol.split(":")[1]}://${Commander.authorization}@${Commander.remotehost}`, {
         perMessageDeflate: true,
     });
 };
 let webSocketClient = makeWebSocketClient();
-const remotehost = (() => {
-    const protocol = Commander.protocol.split(":")[0];
-    return `${protocol}://${Commander.remotehost}`;
-})();
-const localhost = (() => {
-    const protocol = Commander.protocol.split(":")[2];
-    return `${protocol}://${Commander.localhost}`;
-})();
-const websocket = (() => {
-    const protocol = Commander.protocol.split(":")[1];
-    return `${protocol}://${Commander.remotehost}`;
-})();
 const messageHandler = (rawMessage) => {
     const message = circular_json_1.parse(rawMessage);
     if (message.type === "exit") {
@@ -45,31 +28,36 @@ const messageHandler = (rawMessage) => {
         process.exit();
     }
     else if (message.type === "request") {
-        message.payload.headers.host = new url_1.URL(localhost).host;
-        const config = {
-            baseURL: localhost,
-            data: message.payload.body,
+        const options = {
             headers: message.payload.headers,
+            host: Commander.localhost.split(":")[0],
             method: message.payload.method,
-            params: message.payload.query,
-            responseType: "arraybuffer",
-            url: message.payload.originalUrl,
+            path: message.payload.originalUrl,
+            port: Commander.localhost.split(":")[1],
+            protocol: `${Commander.protocol.split(":")[2]}:`,
         };
-        axios_1.default.request(config).then((payload) => {
-            const responseMessage = {
-                identifier: message.identifier,
-                payload: Object.assign({}, payload, { data: Buffer.from(payload.data).toString("base64") }),
-                type: "response",
-            };
-            webSocketClient.send(circular_json_1.stringify(responseMessage));
-        }).catch((payload) => {
-            const errorMessage = {
-                identifier: message.identifier,
-                payload: Object.assign({}, payload.response, { data: Buffer.from(payload.response.data).toString("base64") }),
-                type: "error",
-            };
-            webSocketClient.send(circular_json_1.stringify(errorMessage));
+        const httpRequest = http_1.request(options, (response) => {
+            let data = Buffer.alloc(0);
+            response.on("data", (chunk) => {
+                data = Buffer.concat([data, new Buffer(chunk)]);
+            });
+            response.on("end", () => {
+                const responseMessage = {
+                    identifier: message.identifier,
+                    payload: {
+                        data: data.toString("base64"),
+                        headers: response.headers,
+                        statusCode: response.statusCode || 404,
+                    },
+                    type: "response",
+                };
+                webSocketClient.send(circular_json_1.stringify(responseMessage));
+            });
         });
+        if (Buffer.isBuffer(message.payload.body)) {
+            httpRequest.write(message.payload.body);
+        }
+        httpRequest.end();
     }
 };
 const openHandler = () => {
@@ -77,7 +65,11 @@ const openHandler = () => {
     const rawMessage = circular_json_1.stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);
-    process.stdout.write(`${remotehost} <-- ${websocket} --> ${localhost}\n`);
+    process.stdout.write(`${Commander.protocol.split(":")[0]}://${Commander.remotehost}`);
+    process.stdout.write(" <-- ");
+    process.stdout.write(`${Commander.protocol.split(":")[1]}://${Commander.remotehost}`);
+    process.stdout.write(" --> ");
+    process.stdout.write(`${Commander.protocol.split(":")[2]}://${Commander.localhost}\n`);
 };
 const closeHandler = () => {
     webSocketClient = makeWebSocketClient();

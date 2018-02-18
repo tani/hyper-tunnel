@@ -14,13 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { AxiosResponse } from "axios";
 import { Request } from "express";
+import { ClientResponse } from "http";
+
+interface IResponse { headers: any; statusCode: number; data: string; }
+
 export interface IRegisterMessage { type: "register"; }
 export interface IRequestMessage  { identifier: string; type: "request"; payload: Request; }
-export interface IResponseMessage { identifier: string; type: "response"; payload: AxiosResponse; }
-export interface IErrorMessage    { identifier: string; type: "error"; payload: AxiosResponse; }
+export interface IResponseMessage { identifier: string; type: "response"; payload: IResponse; }
 export interface IExitMessage { type: "exit"; payload: string; }
-export type Message         = IRegisterMessage | IRequestMessage | IResponseMessage | IErrorMessage | IExitMessage;
+
+export type Message         = IRegisterMessage | IRequestMessage | IResponseMessage | IExitMessage;
 export type RawMessage      = string;
 export type MessageHandler  = (rawMessage: RawMessage) => void;
