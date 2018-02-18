@@ -23,7 +23,7 @@ import { readFileSync } from "fs";
 import { ClientRequest, ClientRequestArgs, ClientResponse, request, RequestOptions } from "http";
 import { URL } from "url";
 import WebSocket = require("ws");
-import { IRegisterMessage, IRequestMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
+import { IRegisterMessage, IRequestMessage, IResponseMessage, Message, RawMessage } from "./message";
 
 const buffer = readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
@@ -42,44 +42,43 @@ const makeWebSocketClient = () => {
     });
 };
 
-let webSocketClient = makeWebSocketClient();
+let connection = makeWebSocketClient();
 
-const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
+const messageHandler = (rawMessage: RawMessage) => {
     const message: Message = parse(rawMessage);
     if (message.type === "exit") {
         process.stdout.write(message.payload + "\n");
         process.exit();
     } else if (message.type === "request") {
         const options: RequestOptions = {
-            headers: message.payload.headers,
+            headers: message.payload.request.headers,
             host: Commander.localhost.split(":")[0],
-            method: message.payload.method,
-            path: message.payload.originalUrl,
+            method: message.payload.request.method,
+            path: message.payload.request.url,
             port: Commander.localhost.split(":")[1],
             protocol: `${Commander.protocol.split(":")[2]}:`,
         };
         const httpRequest = request(options, (response: ClientResponse) => {
             let data: Buffer = Buffer.alloc(0);
             const receiveData = (chunk: string | Buffer) => {
-                data = Buffer.concat([data, new Buffer(chunk as any)]);
+                data = Buffer.concat([data, Buffer.from(chunk as any)]);
             };
             const sendResponse = () => {
                 const responseMessage: IResponseMessage = {
                     identifier: message.identifier,
                     payload: {
                         data: data.toString("base64"),
-                        headers: response.headers,
-                        statusCode: response.statusCode || 404,
+                        response,
                     },
                     type: "response",
                 };
-                webSocketClient.send(stringify(responseMessage));
+                connection.send(stringify(responseMessage));
             };
             response.on("data", receiveData);
             response.on("end", sendResponse);
         });
-        if (Buffer.isBuffer(message.payload.body)) {
-            httpRequest.write(message.payload.body);
+        if (Buffer.isBuffer(message.payload.data)) {
+            httpRequest.write(Buffer.from(message.payload.data, "base64"));
         }
         httpRequest.end();
     }
@@ -88,8 +87,8 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
 const openHandler = () => {
     const registerMessage: IRegisterMessage = { type: "register" };
     const rawMessage: RawMessage = stringify(registerMessage);
-    webSocketClient.send(rawMessage);
-    webSocketClient.on("message", messageHandler);
+    connection.send(rawMessage);
+    connection.on("message", messageHandler);
     process.stdout.write(`${Commander.protocol.split(":")[0]}://${Commander.remotehost}`);
     process.stdout.write(" <-- ");
     process.stdout.write(`${Commander.protocol.split(":")[1]}://${Commander.remotehost}`);
@@ -98,10 +97,10 @@ const openHandler = () => {
 };
 
 const closeHandler = () => {
-    webSocketClient = makeWebSocketClient();
-    webSocketClient.on("open", openHandler);
-    webSocketClient.on("close", closeHandler);
+    connection = makeWebSocketClient();
+    connection.on("open", openHandler);
+    connection.on("close", closeHandler);
 };
 
-webSocketClient.on("open", openHandler);
-webSocketClient.on("close", closeHandler);
+connection.on("open", openHandler);
+connection.on("close", closeHandler);

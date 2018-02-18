@@ -20,7 +20,7 @@ const makeWebSocketClient = () => {
         perMessageDeflate: true,
     });
 };
-let webSocketClient = makeWebSocketClient();
+let connection = makeWebSocketClient();
 const messageHandler = (rawMessage) => {
     const message = circular_json_1.parse(rawMessage);
     if (message.type === "exit") {
@@ -29,33 +29,34 @@ const messageHandler = (rawMessage) => {
     }
     else if (message.type === "request") {
         const options = {
-            headers: message.payload.headers,
+            headers: message.payload.request.headers,
             host: Commander.localhost.split(":")[0],
-            method: message.payload.method,
-            path: message.payload.originalUrl,
+            method: message.payload.request.method,
+            path: message.payload.request.url,
             port: Commander.localhost.split(":")[1],
             protocol: `${Commander.protocol.split(":")[2]}:`,
         };
         const httpRequest = http_1.request(options, (response) => {
             let data = Buffer.alloc(0);
-            response.on("data", (chunk) => {
-                data = Buffer.concat([data, new Buffer(chunk)]);
-            });
-            response.on("end", () => {
+            const receiveData = (chunk) => {
+                data = Buffer.concat([data, Buffer.from(chunk)]);
+            };
+            const sendResponse = () => {
                 const responseMessage = {
                     identifier: message.identifier,
                     payload: {
                         data: data.toString("base64"),
-                        headers: response.headers,
-                        statusCode: response.statusCode || 404,
+                        response,
                     },
                     type: "response",
                 };
-                webSocketClient.send(circular_json_1.stringify(responseMessage));
-            });
+                connection.send(circular_json_1.stringify(responseMessage));
+            };
+            response.on("data", receiveData);
+            response.on("end", sendResponse);
         });
-        if (Buffer.isBuffer(message.payload.body)) {
-            httpRequest.write(message.payload.body);
+        if (Buffer.isBuffer(message.payload.data)) {
+            httpRequest.write(Buffer.from(message.payload.data, "base64"));
         }
         httpRequest.end();
     }
@@ -63,8 +64,8 @@ const messageHandler = (rawMessage) => {
 const openHandler = () => {
     const registerMessage = { type: "register" };
     const rawMessage = circular_json_1.stringify(registerMessage);
-    webSocketClient.send(rawMessage);
-    webSocketClient.on("message", messageHandler);
+    connection.send(rawMessage);
+    connection.on("message", messageHandler);
     process.stdout.write(`${Commander.protocol.split(":")[0]}://${Commander.remotehost}`);
     process.stdout.write(" <-- ");
     process.stdout.write(`${Commander.protocol.split(":")[1]}://${Commander.remotehost}`);
@@ -72,9 +73,9 @@ const openHandler = () => {
     process.stdout.write(`${Commander.protocol.split(":")[2]}://${Commander.localhost}\n`);
 };
 const closeHandler = () => {
-    webSocketClient = makeWebSocketClient();
-    webSocketClient.on("open", openHandler);
-    webSocketClient.on("close", closeHandler);
+    connection = makeWebSocketClient();
+    connection.on("open", openHandler);
+    connection.on("close", closeHandler);
 };
-webSocketClient.on("open", openHandler);
-webSocketClient.on("close", closeHandler);
+connection.on("open", openHandler);
+connection.on("close", closeHandler);
