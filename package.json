@@ -9,7 +9,9 @@
     "test:client": "node bin/client.js -a user:pass -l localhost:8000 -r localhost:4000 -p http:ws:http",
     "build": "tsc"
   },
-  "bin": "bin/client.js",
+  "bin": {
+    "htunnel": "bin/client.js"
+  },
   "author": "TANIGUCHI Masaya",
   "license": "GPL",
   "dependencies": {
