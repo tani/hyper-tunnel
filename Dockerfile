@@ -1,3 +1,3 @@
 FROM node
-ADD * .
-RUN npm i -g .
+ADD . hyper-tunnel
+RUN npm i -g ./hyper-tunnel
