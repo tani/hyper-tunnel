@@ -4,7 +4,7 @@
   "description": "noncloud is HTTPS tunnel over WSS",
   "main": "bin/server.js",
   "scripts": {
-    "start": "node bin/server.js -a $USERNAME:$PORT -p $PORT",
+    "start": "node bin/server.js -a $USERNAME:$PASSWORD -p $PORT",
     "test:server": "node bin/server.js -a user:pass -p 4000",
     "test:client": "node bin/client.js -a user:pass -l localhost:8000 -r localhost:4000 -p http:ws:http",
     "build": "tsc"
