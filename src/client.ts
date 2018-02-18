@@ -21,6 +21,7 @@ import { parse, stringify } from "circular-json";
 import Commander = require("commander");
 import { readFileSync } from "fs";
 import { ClientRequest, ClientRequestArgs, ClientResponse, request, RequestOptions } from "http";
+import { setTimeout } from "timers";
 import { URL } from "url";
 import WebSocket = require("ws");
 import { IRegisterMessage, IRequestMessage, IResponseMessage, Message, RawMessage } from "./message";
@@ -36,13 +37,10 @@ Commander
     .option("-p, --protocol <remotehost:websocket:localhost>", "use this protocols", "https:wss:http")
     .parse(process.argv);
 
-const makeWebSocketClient = () => {
-    return new WebSocket(`${Commander.protocol.split(":")[1]}://${Commander.authorization}@${Commander.remotehost}`, {
-        perMessageDeflate: true,
-    });
-};
-
-let connection = makeWebSocketClient();
+const url = `${Commander.protocol.split(":")[1]}://${Commander.authorization}@${Commander.remotehost}`;
+const connection = new WebSocket(url, {
+    perMessageDeflate: true,
+});
 
 const messageHandler = (rawMessage: RawMessage) => {
     const message: Message = parse(rawMessage);
@@ -92,13 +90,8 @@ const openHandler = () => {
     process.stdout.write(`${Commander.protocol.split(":")[1]}://${Commander.remotehost}`);
     process.stdout.write(" --> ");
     process.stdout.write(`${Commander.protocol.split(":")[2]}://${Commander.localhost}\n`);
-};
-
-const closeHandler = () => {
-    connection = makeWebSocketClient();
-    connection.on("open", openHandler);
-    connection.on("close", closeHandler);
+    connection.on("pong", () => { setTimeout(() => { connection.ping(); }, 15 * 1000); });
+    connection.ping();
 };
 
 connection.on("open", openHandler);
-connection.on("close", closeHandler);

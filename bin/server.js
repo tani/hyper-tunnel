@@ -96,4 +96,5 @@ webSocketServer.on("connection", (socket) => {
         }
     };
     socket.on("message", messageHandler);
+    socket.on("ping", () => { setTimeout(() => { connection.pong(); }, 15 * 1000); });
 });

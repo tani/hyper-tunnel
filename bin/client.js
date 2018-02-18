@@ -5,6 +5,7 @@ const circular_json_1 = require("circular-json");
 const Commander = require("commander");
 const fs_1 = require("fs");
 const http_1 = require("http");
+const timers_1 = require("timers");
 const WebSocket = require("ws");
 const buffer = fs_1.readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
@@ -15,12 +16,10 @@ Commander
     .option("-l, --localhost <localhost:port>", "tunnel traffic to this host")
     .option("-p, --protocol <remotehost:websocket:localhost>", "use this protocols", "https:wss:http")
     .parse(process.argv);
-const makeWebSocketClient = () => {
-    return new WebSocket(`${Commander.protocol.split(":")[1]}://${Commander.authorization}@${Commander.remotehost}`, {
-        perMessageDeflate: true,
-    });
-};
-let connection = makeWebSocketClient();
+const url = `${Commander.protocol.split(":")[1]}://${Commander.authorization}@${Commander.remotehost}`;
+const connection = new WebSocket(url, {
+    perMessageDeflate: true,
+});
 const messageHandler = (rawMessage) => {
     const message = circular_json_1.parse(rawMessage);
     if (message.type === "exit") {
@@ -69,11 +68,7 @@ const openHandler = () => {
     process.stdout.write(`${Commander.protocol.split(":")[1]}://${Commander.remotehost}`);
     process.stdout.write(" --> ");
     process.stdout.write(`${Commander.protocol.split(":")[2]}://${Commander.localhost}\n`);
-};
-const closeHandler = () => {
-    connection = makeWebSocketClient();
-    connection.on("open", openHandler);
-    connection.on("close", closeHandler);
+    connection.on("pong", () => { timers_1.setTimeout(() => { connection.ping(); }, 15 * 1000); });
+    connection.ping();
 };
 connection.on("open", openHandler);
-connection.on("close", closeHandler);
