@@ -2,15 +2,16 @@
   "name": "hyper-tunnel",
   "version": "1.0.1",
   "description": "noncloud is HTTPS tunnel over WSS",
-  "main": "server.js",
+  "main": "bin/server.js",
   "scripts": {
-    "start": "node bin/server.js",
-    "test:server": "ALLOW_UNENCRYPTED_CONNECTION=1 PASSWORD=pass USERNAME=user PORT=4000 npm start",
+    "start": "node bin/server.js -a $USERNAME:$PORT -p $PORT",
+    "test:server": "node bin/server.js -a user:pass -p 4000",
     "test:client": "node bin/client.js -a user:pass -l localhost:8000 -r localhost:4000 -p http:ws:http",
     "build": "tsc"
   },
   "bin": {
-    "htunnel": "bin/client.js"
+    "htunnel-client": "bin/client.js",
+    "htunnel-server": "bin/server.js"
   },
   "author": "TANIGUCHI Masaya",
   "license": "GPL",

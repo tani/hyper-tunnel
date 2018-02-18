@@ -18,7 +18,8 @@ web browser <--HTTPS--> hyper-tunnel server
 
 ```sh
 $ npm install -g asciian/hyper-tunnel
-$ htunnel -a USERNAME:PASSWORD -l localhost:8000 -r HYPER_TUNNEL_SERVER_URL
+$ htunnel-server --authorization USERNAME:PASSWORD --port 4000
+$ htunnel-client --authorization USERNAME:PASSWORD --localhost localhost:8000 --remotehost localhost:4000
 ```
 
 ## Related Services

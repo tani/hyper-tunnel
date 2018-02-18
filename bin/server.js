@@ -19,5 +19,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = require("http");
 const application_1 = require("./application");
 exports.server = http_1.createServer(application_1.application);
+const Commander = require("commander");
+const fs_1 = require("fs");
 require("./websocket");
-exports.server.listen(process.env.PORT);
+const buffer = fs_1.readFileSync(`${__dirname}/../package.json`);
+const version = JSON.parse(buffer.toString()).version;
+Commander
+    .version(version, "-v, --version")
+    .option("-a, --authorization <username:password>", "set hyper-tunnel account")
+    .option("-e, --encryption", "use encryption")
+    .option("-p, --port <port>", "use this protocols", "listen this port")
+    .parse(process.argv);
+exports.port = Commander.port;
+exports.authorization = Commander.authorization;
+exports.encryption = Commander.encryption;
+exports.server.listen(exports.port);

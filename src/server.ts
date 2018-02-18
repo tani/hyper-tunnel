@@ -18,5 +18,22 @@
 import { createServer } from "http";
 import { application } from "./application";
 export const server = createServer(application);
+import Commander = require("commander");
+import { readFileSync } from "fs";
 import "./websocket";
-server.listen(process.env.PORT);
+
+const buffer = readFileSync(`${__dirname}/../package.json`);
+const version = JSON.parse(buffer.toString()).version;
+
+Commander
+    .version(version, "-v, --version")
+    .option("-a, --authorization <username:password>", "set hyper-tunnel account")
+    .option("-e, --encryption", "use encryption")
+    .option("-p, --port <port>", "use this protocols", "listen this port")
+    .parse(process.argv);
+
+export const port = Commander.port;
+export const authorization = Commander.authorization;
+export const encryption = Commander.encryption;
+
+server.listen(port);
