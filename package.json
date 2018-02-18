@@ -1,5 +1,5 @@
 {
-  "name": "noncloud",
+  "name": "hyper-tunnel",
   "version": "1.0.0",
   "description": "noncloud is HTTPS tunnel over WSS",
   "main": "server.js",
