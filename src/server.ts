@@ -15,12 +15,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { createServer } from "http";
-import { application } from "./application";
-export const server = createServer(application);
+import { parse, stringify } from "circular-json";
 import Commander = require("commander");
+import { EventEmitter } from "events";
 import { readFileSync } from "fs";
-import "./websocket";
+import { createServer } from "http";
+import { ServerRequest, ServerResponse} from "http";
+import UUID = require("uuid/v1");
+import * as WebSocket from "ws";
+import { IExitMessage, IRequestMessage, IResponseMessage, Message, RawMessage } from "./message";
 
 const buffer = readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
@@ -32,8 +35,65 @@ Commander
     .option("-p, --port <port>", "use this protocols", "listen this port")
     .parse(process.argv);
 
-export const port = Commander.port;
-export const authorization = Commander.authorization;
-export const encryption = Commander.encryption;
+const emitter = new EventEmitter();
+let connection: WebSocket;
 
-server.listen(port);
+const application = (request: ServerRequest, response: ServerResponse) => {
+    if (!connection || connection.readyState === connection.CLOSED) {
+        response.writeHead(404);
+        response.end(readFileSync(`${__dirname}/404.html`));
+    } else {
+        const identifier: string = UUID();
+        let data: Buffer = Buffer.alloc(0);
+        const receiveData = (chunk: string | Buffer) => {
+            data = Buffer.concat([data, Buffer.from(chunk as any)]);
+        };
+        const sendResponse = () => {
+            const requestMessage: IRequestMessage = {
+                identifier,
+                payload: {
+                    data: data.toString("base64"),
+                    request,
+                },
+                type: "request",
+            };
+            connection.send(stringify(requestMessage));
+        };
+        const eventHandler = (rawMessage: RawMessage) => {
+            const message: Message = parse(rawMessage);
+            if (message.type === "response") {
+                response.writeHead(message.payload.response.statusCode || 404, message.payload.response.headers);
+                response.end(Buffer.from(message.payload.data, "base64"));
+            }
+        };
+        request.on("data", receiveData);
+        request.on("end", sendResponse);
+        emitter.once(identifier, eventHandler);
+    }
+};
+
+const server = createServer(application);
+server.listen(Commander.port);
+
+const webSocketServer = new WebSocket.Server({
+    perMessageDeflate: true,
+    server,
+    verifyClient: ({ req, secure }: { req: any, secure: boolean }) => {
+        if (secure || !Commander.encryption) {
+            return req.headers.authorization === `Basic ${Buffer.from( Commander.authorization).toString("base64")}`;
+        }
+    },
+});
+
+webSocketServer.on("connection", (socket: WebSocket) => {
+    const messageHandler = (rawMessage: RawMessage) => {
+        const message: Message = parse(rawMessage);
+        if (message.type === "register") {
+            connection = socket;
+        }
+        if (message.type === "response") {
+            emitter.emit(message.identifier, rawMessage);
+        }
+    };
+    socket.on("message", messageHandler);
+});
