@@ -46,7 +46,7 @@ let webSocketClient = makeWebSocketClient();
 
 const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
-    return `${protocol}://${Commander.remotehost}/`;
+    return `${protocol}://${Commander.remotehost}`;
 })();
 
 const localhost = (() => {
