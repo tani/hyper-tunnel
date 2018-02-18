@@ -38,10 +38,10 @@ exports.applicationHandler = (request, response) => {
         }
         const eventHandler = (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
-            if (message.type === "response" || message.type === "error") {
+            if (message.type === "response") {
                 response
                     .set(message.payload.headers)
-                    .status(message.payload.status)
+                    .status(message.payload.statusCode)
                     .send(Buffer.from(message.payload.data, "base64"));
             }
         };

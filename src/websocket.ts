@@ -37,7 +37,7 @@ webSocketServer.on("connection", (socket: WebSocket) => {
         if (message.type === "register") {
             connection.socket = socket;
         }
-        if (message.type === "response" || message.type === "error") {
+        if (message.type === "response") {
             emitter.emit(message.identifier, rawMessage);
         }
     };
