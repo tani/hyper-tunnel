@@ -1,6 +1,6 @@
 {
   "name": "noncloud",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "description": "noncloud is HTTPS tunnel over WSS",
   "main": "server.js",
   "scripts": {
