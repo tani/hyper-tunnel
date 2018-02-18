@@ -21,22 +21,21 @@ import compressoin = require("compression");
 import { EventEmitter } from "events";
 import Express = require("express");
 import UUID = require("uuid/v1");
-import { database } from "./database";
+import { connection } from "./connection";
 import { IRequestMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
-import { checkServerIdentity } from "tls";
 
 export const emitter = new EventEmitter();
 export const application = Express();
 
 export const applicationHandler = (request: Express.Request, response: Express.Response) => {
-    if (!database[request.params.name]) {
+    if (!connection.socket || connection.socket.readyState === connection.socket.CLOSED) {
         response.status(404).sendFile(`${__dirname}/404.html`);
     } else {
         const identifier = UUID();
         {
             const requestMessage: IRequestMessage = { identifier, type: "request", payload: request };
             const rawMessage: RawMessage = stringify(requestMessage);
-            database[request.params.name].send(rawMessage);
+            connection.socket.send(rawMessage);
         }
         const eventHandler: MessageHandler = (rawMessage: RawMessage) => {
             const message: Message = parse(rawMessage);
@@ -47,18 +46,10 @@ export const applicationHandler = (request: Express.Request, response: Express.R
                     .send(Buffer.from(message.payload.data, "base64"));
             }
         };
-        emitter.once(`${identifier}/${request.params[0]}`, eventHandler);
+        emitter.once(identifier, eventHandler);
     }
 };
 
-application.all("/:name/*", applicationHandler);
-
-application.all("/:name", (request: Express.Request, response: Express.Response) => {
-    response.redirect(`/${request.params.name}/`);
-});
-
-application.get("/", (request: Express.Request, response: Express.Response) => {
-    response.redirect("https://github.com/asciian/noncloud");
-});
-application.use(compressoin());
 application.use(raw({ type: "*/*" }));
+application.use(compressoin());
+application.use(applicationHandler);

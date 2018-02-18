@@ -14,7 +14,6 @@ const buffer = fs_1.readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
 Commander
     .version(version, "-v, --version")
-    .option("-n, --name <name>", "set application name")
     .option("-a, --authorization <username:password>", "login noncloud server")
     .option("-r, --remotehost <remotehost:port>", "set noncloud server")
     .option("-l, --localhost <localhost:port>", "tunnel traffic to this host")
@@ -29,7 +28,7 @@ const makeWebSocketClient = () => {
 let webSocketClient = makeWebSocketClient();
 const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
-    return `${protocol}://${Commander.remotehost}/${Commander.name}`;
+    return `${protocol}://${Commander.remotehost}/`;
 })();
 const localhost = (() => {
     const protocol = Commander.protocol.split(":")[2];
@@ -54,7 +53,7 @@ const messageHandler = (rawMessage) => {
             method: message.payload.method,
             params: message.payload.query,
             responseType: "arraybuffer",
-            url: `/${message.payload.params[0]}`,
+            url: message.payload.originalUrl,
         };
         axios_1.default.request(config).then((payload) => {
             const responseMessage = {
@@ -74,7 +73,7 @@ const messageHandler = (rawMessage) => {
     }
 };
 const openHandler = () => {
-    const registerMessage = { type: "register", payload: Commander.name.toString() };
+    const registerMessage = { type: "register" };
     const rawMessage = circular_json_1.stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);

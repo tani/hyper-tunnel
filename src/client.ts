@@ -23,14 +23,12 @@ import { readFileSync } from "fs";
 import { URL } from "url";
 import WebSocket = require("ws");
 import { IErrorMessage, IRegisterMessage, IRequestMessage, IResponseMessage, Message, MessageHandler, RawMessage } from "./message";
-import { request } from "http";
 
 const buffer = readFileSync(`${__dirname}/../package.json`);
 const version = JSON.parse(buffer.toString()).version;
 
 Commander
     .version(version, "-v, --version")
-    .option("-n, --name <name>", "set application name")
     .option("-a, --authorization <username:password>", "login noncloud server")
     .option("-r, --remotehost <remotehost:port>", "set noncloud server")
     .option("-l, --localhost <localhost:port>", "tunnel traffic to this host")
@@ -48,7 +46,7 @@ let webSocketClient = makeWebSocketClient();
 
 const remotehost = (() => {
     const protocol = Commander.protocol.split(":")[0];
-    return `${protocol}://${Commander.remotehost}/${Commander.name}`;
+    return `${protocol}://${Commander.remotehost}/`;
 })();
 
 const localhost = (() => {
@@ -75,7 +73,7 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
             method: message.payload.method,
             params: message.payload.query,
             responseType: "arraybuffer",
-            url: `/${message.payload.params[0]}`,
+            url: message.payload.originalUrl,
         };
         Axios.request(config).then((payload: AxiosResponse) => {
             const responseMessage: IResponseMessage = {
@@ -102,7 +100,7 @@ const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
 };
 
 const openHandler = () => {
-    const registerMessage: IRegisterMessage = { type: "register", payload: Commander.name.toString() };
+    const registerMessage: IRegisterMessage = { type: "register" };
     const rawMessage: RawMessage = stringify(registerMessage);
     webSocketClient.send(rawMessage);
     webSocketClient.on("message", messageHandler);

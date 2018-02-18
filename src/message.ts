@@ -16,7 +16,7 @@
  */
 import { AxiosResponse } from "axios";
 import { Request } from "express";
-export interface IRegisterMessage { type: "register"; payload: string; }
+export interface IRegisterMessage { type: "register"; }
 export interface IRequestMessage  { identifier: string; type: "request"; payload: Request; }
 export interface IResponseMessage { identifier: string; type: "response"; payload: AxiosResponse; }
 export interface IErrorMessage    { identifier: string; type: "error"; payload: AxiosResponse; }
