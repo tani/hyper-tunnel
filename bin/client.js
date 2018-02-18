@@ -55,9 +55,7 @@ const messageHandler = (rawMessage) => {
             response.on("data", receiveData);
             response.on("end", sendResponse);
         });
-        if (Buffer.isBuffer(message.payload.data)) {
-            httpRequest.write(Buffer.from(message.payload.data, "base64"));
-        }
+        httpRequest.write(Buffer.from(message.payload.data, "base64"));
         httpRequest.end();
     }
 };
