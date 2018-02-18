@@ -20,13 +20,12 @@ import * as WebSocket from "ws";
 import { emitter } from "./application";
 import { connection } from "./connection";
 import { IExitMessage, Message, MessageHandler, RawMessage } from "./message";
-import { server } from "./server";
+import { authorization, encryption, server } from "./server";
 const webSocketServer = new WebSocket.Server({
     perMessageDeflate: true,
     server,
     verifyClient: ({ req, secure }: { req: any, secure: boolean }) => {
-        if (secure || process.env.ALLOW_UNENCRYPTED_CONNECTION) {
-            const authorization = `${process.env.USERNAME}:${process.env.PASSWORD}`;
+        if (secure || !encryption) {
             return req.headers.authorization === `Basic ${Buffer.from(authorization).toString("base64")}`;
         }
     },
