@@ -22,6 +22,13 @@ $ htunnel-server --authorization USERNAME:PASSWORD --port 4000
 $ htunnel-client --authorization USERNAME:PASSWORD --localhost localhost:8000 --remotehost localhost:4000
 ```
 
+## Docker Image
+
+```sh
+$ docker run asciian/hyper-tunnel htunnel-server ...
+$ docker run asciian/hyper-tunnel htunnel-client ...
+```
+
 ## Related Services
 
 - localtunnel
