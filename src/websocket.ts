@@ -18,10 +18,9 @@
 import { parse, stringify } from "circular-json";
 import * as WebSocket from "ws";
 import { emitter } from "./application";
-import { database } from "./database";
+import { connection } from "./connection";
 import { IExitMessage, Message, MessageHandler, RawMessage } from "./message";
 import { server } from "./server";
-
 const webSocketServer = new WebSocket.Server({
     perMessageDeflate: true,
     server,
@@ -37,29 +36,10 @@ webSocketServer.on("connection", (socket: WebSocket) => {
     const messageHandler: MessageHandler = (rawMessage: RawMessage) => {
         const message: Message = parse(rawMessage);
         if (message.type === "register") {
-            if (!message.payload.match(/^[A-Za-z0-9][A-Za-z0-9\-]{2,30}[A-Za-z0-9]$/)) {
-                const exitMessage: IExitMessage = {
-                    payload: "Name has to be between 4 and 32 characters long.",
-                    type: "exit",
-                };
-                return socket.send(stringify(exitMessage));
-            }
-            if (database[message.payload]) {
-                const exitMessage: IExitMessage = {
-                    payload: "Name is aleady used by other account.",
-                    type: "exit",
-                };
-                return socket.send(stringify(exitMessage));
-            }
-            database[message.payload] = socket;
-            database[message.payload].on("close", () => {
-                delete database[message.payload];
-            });
+            connection.socket = socket;
         }
         if (message.type === "response" || message.type === "error") {
-            const url = message.payload.config.url as string;
-            const baseURL = message.payload.config.baseURL as string;
-            emitter.emit(`${message.identifier}${url.replace(baseURL, "")}`, rawMessage);
+            emitter.emit(message.identifier, rawMessage);
         }
     };
     socket.on("message", messageHandler);

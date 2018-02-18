@@ -22,11 +22,11 @@ const compressoin = require("compression");
 const events_1 = require("events");
 const Express = require("express");
 const UUID = require("uuid/v1");
-const database_1 = require("./database");
+const connection_1 = require("./connection");
 exports.emitter = new events_1.EventEmitter();
 exports.application = Express();
 exports.applicationHandler = (request, response) => {
-    if (!database_1.database[request.params.name]) {
+    if (!connection_1.connection.socket || connection_1.connection.socket.readyState === connection_1.connection.socket.CLOSED) {
         response.status(404).sendFile(`${__dirname}/404.html`);
     }
     else {
@@ -34,7 +34,7 @@ exports.applicationHandler = (request, response) => {
         {
             const requestMessage = { identifier, type: "request", payload: request };
             const rawMessage = circular_json_1.stringify(requestMessage);
-            database_1.database[request.params.name].send(rawMessage);
+            connection_1.connection.socket.send(rawMessage);
         }
         const eventHandler = (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
@@ -45,15 +45,9 @@ exports.applicationHandler = (request, response) => {
                     .send(Buffer.from(message.payload.data, "base64"));
             }
         };
-        exports.emitter.once(`${identifier}/${request.params[0]}`, eventHandler);
+        exports.emitter.once(identifier, eventHandler);
     }
 };
-exports.application.all("/:name/*", exports.applicationHandler);
-exports.application.all("/:name", (request, response) => {
-    response.redirect(`/${request.params.name}/`);
-});
-exports.application.get("/", (request, response) => {
-    response.redirect("https://github.com/asciian/noncloud");
-});
-exports.application.use(compressoin());
 exports.application.use(body_parser_1.raw({ type: "*/*" }));
+exports.application.use(compressoin());
+exports.application.use(exports.applicationHandler);
