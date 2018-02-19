@@ -1,6 +1,6 @@
 {
   "name": "hyper-tunnel",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "noncloud is HTTPS tunnel over WSS",
   "main": "bin/command.js",
   "scripts": {
