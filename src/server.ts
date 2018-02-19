@@ -80,6 +80,8 @@ export default (options: any) => {
 
     webSocketServer.on("connection", (socket: WebSocket) => {
         if (connection) {
+            connection.removeAllListeners("message");
+            connection.removeAllListeners("ping");
             connection.close();
         }
         connection = socket;

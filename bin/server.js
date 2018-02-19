@@ -84,6 +84,8 @@ exports.default = (options) => {
     });
     webSocketServer.on("connection", (socket) => {
         if (connection) {
+            connection.removeAllListeners("message");
+            connection.removeAllListeners("ping");
             connection.close();
         }
         connection = socket;
