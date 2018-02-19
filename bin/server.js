@@ -83,6 +83,9 @@ exports.default = (options) => {
         },
     });
     webSocketServer.on("connection", (socket) => {
+        if (connection) {
+            connection.close();
+        }
         connection = socket;
         connection.on("message", (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
