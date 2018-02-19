@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*
  * This file is part of the noncloud.
  * Copyright (c) 2018 TANIGUCHI Masaya.
