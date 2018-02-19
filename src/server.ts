@@ -27,7 +27,7 @@ export default (options: any) => {
     const emitter = new EventEmitter();
     let connection: WebSocket;
 
-    const application = (request: ServerRequest, response: ServerResponse) => {
+    const server = createServer((request: ServerRequest, response: ServerResponse) => {
         if (!connection || connection.readyState === connection.CLOSED) {
             response.writeHead(404);
             response.end(readFileSync(`${__dirname}/404.html`));
@@ -66,9 +66,8 @@ export default (options: any) => {
                 emitter.removeAllListeners(`end:${identifier}`);
             });
         }
-    };
+    });
 
-    const server = createServer(application);
     server.listen(options.port);
 
     const webSocketServer = new WebSocket.Server({
@@ -82,14 +81,13 @@ export default (options: any) => {
     });
 
     webSocketServer.on("connection", (socket: WebSocket) => {
-        const messageHandler = (rawMessage: RawMessage) => {
+        connection = socket;
+        connection.on("message", (rawMessage: RawMessage) => {
             const message: Message<ClientResponse> = parse(rawMessage);
             if (message.type === "header" || message.type === "data" || message.type === "end") {
                 emitter.emit(`${message.type}:${message.identifier}`, message);
             }
-        };
-        connection = socket;
-        connection.on("message", messageHandler);
+        });
         connection.on("ping", () => { setTimeout(() => { connection.pong(); }, 15 * 1000); });
     });
 };

@@ -11,59 +11,58 @@ exports.default = (options) => {
     const connection = new WebSocket(url, {
         perMessageDeflate: true,
     });
-    const emitter = new events_1.EventEmitter();
-    const messageHandler = (rawMessage) => {
-        const message = circular_json_1.parse(rawMessage);
-        if (message.type === "exit") {
-            process.stdout.write(message.payload + "\n");
-            process.exit();
-        }
-        if (message.type === "header") {
-            const requestOptions = {
-                headers: message.payload.headers,
-                host: options.localhost.split(":")[0],
-                method: message.payload.method,
-                path: message.payload.url,
-                port: options.localhost.split(":")[1],
-                protocol: `${options.protocol.split(":")[2]}:`,
-            };
-            const clientRequest = http_1.request(requestOptions, (response) => {
-                connection.send(circular_json_1.stringify({
-                    identifier: message.identifier,
-                    payload: response,
-                    type: "header",
-                }));
-                response.on("data", (data) => {
-                    const dataMessage = {
+    connection.on("open", () => {
+        const emitter = new events_1.EventEmitter();
+        connection.on("message", (rawMessage) => {
+            const message = circular_json_1.parse(rawMessage);
+            if (message.type === "exit") {
+                process.stdout.write(message.payload + "\n");
+                process.exit();
+            }
+            if (message.type === "header") {
+                const requestOptions = {
+                    headers: message.payload.headers,
+                    host: options.localhost.split(":")[0],
+                    method: message.payload.method,
+                    path: message.payload.url,
+                    port: options.localhost.split(":")[1],
+                    protocol: `${options.protocol.split(":")[2]}:`,
+                };
+                const clientRequest = http_1.request(requestOptions, (response) => {
+                    connection.send(circular_json_1.stringify({
                         identifier: message.identifier,
-                        payload: Buffer.from(data).toString("base64"),
-                        type: "data",
-                    };
-                    connection.send(circular_json_1.stringify(dataMessage));
+                        payload: response,
+                        type: "header",
+                    }));
+                    response.on("data", (data) => {
+                        const dataMessage = {
+                            identifier: message.identifier,
+                            payload: Buffer.from(data).toString("base64"),
+                            type: "data",
+                        };
+                        connection.send(circular_json_1.stringify(dataMessage));
+                    });
+                    response.on("end", () => {
+                        const endMessage = {
+                            identifier: message.identifier,
+                            type: "end",
+                        };
+                        connection.send(circular_json_1.stringify(endMessage));
+                    });
                 });
-                response.on("end", () => {
-                    const endMessage = {
-                        identifier: message.identifier,
-                        type: "end",
-                    };
-                    connection.send(circular_json_1.stringify(endMessage));
+                emitter.on(`data:${message.identifier}`, (dataMessage) => {
+                    clientRequest.write(Buffer.from(dataMessage.payload, "base64"));
                 });
-            });
-            emitter.on(`data:${message.identifier}`, (dataMessage) => {
-                clientRequest.write(Buffer.from(dataMessage.payload, "base64"));
-            });
-            emitter.on(`end:${message.identifier}`, (endMessage) => {
-                clientRequest.end();
-                emitter.removeAllListeners(`data:${message.identifier}`);
-                emitter.removeAllListeners(`end:${message.identifier}`);
-            });
-        }
-        if (message.type === "data" || message.type === "end") {
-            emitter.emit(`${message.type}:${message.identifier}`, message);
-        }
-    };
-    const openHandler = () => {
-        connection.on("message", messageHandler);
+                emitter.on(`end:${message.identifier}`, (endMessage) => {
+                    clientRequest.end();
+                    emitter.removeAllListeners(`data:${message.identifier}`);
+                    emitter.removeAllListeners(`end:${message.identifier}`);
+                });
+            }
+            if (message.type === "data" || message.type === "end") {
+                emitter.emit(`${message.type}:${message.identifier}`, message);
+            }
+        });
         process.stdout.write(`${options.protocol.split(":")[0]}://${options.remotehost}`);
         process.stdout.write(" <-- ");
         process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);
@@ -71,6 +70,5 @@ exports.default = (options) => {
         process.stdout.write(`${options.protocol.split(":")[2]}://${options.localhost}\n`);
         connection.on("pong", () => { timers_1.setTimeout(() => { connection.ping(); }, 15 * 1000); });
         connection.ping();
-    };
-    connection.on("open", openHandler);
+    });
 };
