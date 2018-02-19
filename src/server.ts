@@ -16,84 +16,80 @@
  */
 
 import { parse, stringify } from "circular-json";
-import Commander = require("commander");
 import { EventEmitter } from "events";
 import { readFileSync } from "fs";
-import { createServer, ServerRequest, ServerResponse } from "http";
+import { ClientResponse, createServer, ServerRequest, ServerResponse } from "http";
 import UUID = require("uuid/v1");
 import * as WebSocket from "ws";
-import { IExitMessage, IRequestMessage, IResponseMessage, Message, RawMessage } from "./message";
+import { IDataMessage, IEndMessage, IExitMessage, IHeaderMessage, Message, RawMessage } from "./message";
 
-const buffer = readFileSync(`${__dirname}/../package.json`);
-const version = JSON.parse(buffer.toString()).version;
+export default (options: any) => {
+    const emitter = new EventEmitter();
+    let connection: WebSocket;
 
-Commander
-    .version(version, "-v, --version")
-    .option("-a, --authorization <username:password>", "set hyper-tunnel account")
-    .option("-e, --encryption", "use encryption")
-    .option("-p, --port <port>", "use this protocols", "listen this port")
-    .parse(process.argv);
-
-const emitter = new EventEmitter();
-let connection: WebSocket;
-
-const application = (request: ServerRequest, response: ServerResponse) => {
-    if (!connection || connection.readyState === connection.CLOSED) {
-        response.writeHead(404);
-        response.end(readFileSync(`${__dirname}/404.html`));
-    } else {
-        const identifier: string = UUID();
-        let data: Buffer = Buffer.alloc(0);
-        const receiveData = (chunk: string | Buffer) => {
-            data = Buffer.concat([data, Buffer.from(chunk as any)]);
-        };
-        const sendResponse = () => {
-            const requestMessage: IRequestMessage = {
+    const application = (request: ServerRequest, response: ServerResponse) => {
+        if (!connection || connection.readyState === connection.CLOSED) {
+            response.writeHead(404);
+            response.end(readFileSync(`${__dirname}/404.html`));
+        } else {
+            const identifier: string = UUID();
+            connection.send(stringify({
                 identifier,
-                payload: {
-                    data: data.toString("base64"),
-                    request,
-                },
-                type: "request",
-            };
-            connection.send(stringify(requestMessage));
-        };
-        const eventHandler = (rawMessage: RawMessage) => {
-            const message: Message = parse(rawMessage);
-            if (message.type === "response") {
-                response.writeHead(message.payload.response.statusCode || 404, message.payload.response.headers);
-                response.end(Buffer.from(message.payload.data, "base64"));
-            }
-        };
-        request.on("data", receiveData);
-        request.on("end", sendResponse);
-        emitter.once(identifier, eventHandler);
-    }
-};
-
-const server = createServer(application);
-server.listen(Commander.port);
-
-const webSocketServer = new WebSocket.Server({
-    perMessageDeflate: true,
-    server,
-    verifyClient: ({ req, secure }: { req: any, secure: boolean }) => {
-        if (secure || !Commander.encryption) {
-            return req.headers.authorization === `Basic ${Buffer.from( Commander.authorization).toString("base64")}`;
-        }
-    },
-});
-
-webSocketServer.on("connection", (socket: WebSocket) => {
-    const messageHandler = (rawMessage: RawMessage) => {
-        const message: Message = parse(rawMessage);
-        if (message.type === "register") {
-            connection = socket;
-        }
-        if (message.type === "response") {
-            emitter.emit(message.identifier, rawMessage);
+                payload: request,
+                type: "header",
+            } as IHeaderMessage<ServerRequest>));
+            request.on("data", (data: string | Buffer) => {
+                const dataMessage: IDataMessage = {
+                    identifier,
+                    payload: Buffer.from(data as any).toString("base64"),
+                    type: "data",
+                };
+                connection.send(stringify(dataMessage));
+            });
+            request.on("end", () => {
+                const endMessage: IEndMessage = {
+                    identifier,
+                    type: "end",
+                };
+                connection.send(stringify(endMessage));
+            });
+            emitter.on(`header:${identifier}`, (headerMessage: IHeaderMessage<ClientResponse>) => {
+                response.writeHead(headerMessage.payload.statusCode || 404, headerMessage.payload.headers);
+            });
+            emitter.on(`data:${identifier}`, (dataMessage: IDataMessage) => {
+                response.write(Buffer.from(dataMessage.payload, "base64"));
+            });
+            emitter.on(`end:${identifier}`, (endMessage: IEndMessage) => {
+                response.end();
+                emitter.removeAllListeners(`header:${identifier}`);
+                emitter.removeAllListeners(`data:${identifier}`);
+                emitter.removeAllListeners(`end:${identifier}`);
+            });
         }
     };
-    socket.on("message", messageHandler);
-    socket.on("ping", () => { setTimeout(() => { connection.pong(); }, 15 * 1000); });
-});
+
+    const server = createServer(application);
+    server.listen(options.port);
+
+    const webSocketServer = new WebSocket.Server({
+        perMessageDeflate: true,
+        server,
+        verifyClient: ({ req, secure }: { req: any, secure: boolean }) => {
+            if (secure || !options.encryption) {
+                return req.headers.authorization === `Basic ${Buffer.from(options.authorization).toString("base64")}`;
+            }
+        },
+    });
+
+    webSocketServer.on("connection", (socket: WebSocket) => {
+        const messageHandler = (rawMessage: RawMessage) => {
+            const message: Message<ClientResponse> = parse(rawMessage);
+            if (message.type === "header" || message.type === "data" || message.type === "end") {
+                emitter.emit(`${message.type}:${message.identifier}`, message);
+            }
+        };
+        connection = socket;
+        connection.on("message", messageHandler);
+        connection.on("ping", () => { setTimeout(() => { connection.pong(); }, 15 * 1000); });
+    });
+};
