@@ -90,6 +90,6 @@ exports.default = (options) => {
                 emitter.emit(`${message.type}:${message.identifier}`, message);
             }
         });
-        connection.on("ping", () => { setTimeout(() => { connection.pong(); }, 15 * 1000); });
+        connection.on("ping", () => { connection.pong(); });
     });
 };
