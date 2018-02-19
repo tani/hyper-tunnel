@@ -20,7 +20,7 @@ import { EventEmitter } from "events";
 import { readFileSync } from "fs";
 import { ClientResponse, createServer, ServerRequest, ServerResponse } from "http";
 import * as WebSocket from "ws";
-import { IDataMessage, IEndMessage, IExitMessage, IHeaderMessage, Message, RawMessage } from "./message";
+import { IDataMessage, IEndMessage, IHeaderMessage, Message, RawMessage } from "./message";
 
 export default (options: any) => {
     const emitter = new EventEmitter();

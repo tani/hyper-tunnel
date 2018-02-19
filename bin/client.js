@@ -14,10 +14,6 @@ exports.default = (options) => {
         const emitter = new events_1.EventEmitter();
         connection.on("message", (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
-            if (message.type === "exit") {
-                process.stdout.write(message.payload + "\n");
-                process.exit();
-            }
             if (message.type === "header") {
                 const requestOptions = {
                     headers: message.payload.headers,
