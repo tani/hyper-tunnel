@@ -32,7 +32,7 @@ const WebSocket = __importStar(require("ws"));
 exports.default = (options) => {
     const emitter = new events_1.EventEmitter();
     let connection;
-    const application = (request, response) => {
+    const server = http_1.createServer((request, response) => {
         if (!connection || connection.readyState === connection.CLOSED) {
             response.writeHead(404);
             response.end(fs_1.readFileSync(`${__dirname}/404.html`));
@@ -72,8 +72,7 @@ exports.default = (options) => {
                 emitter.removeAllListeners(`end:${identifier}`);
             });
         }
-    };
-    const server = http_1.createServer(application);
+    });
     server.listen(options.port);
     const webSocketServer = new WebSocket.Server({
         perMessageDeflate: true,
@@ -85,14 +84,13 @@ exports.default = (options) => {
         },
     });
     webSocketServer.on("connection", (socket) => {
-        const messageHandler = (rawMessage) => {
+        connection = socket;
+        connection.on("message", (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
             if (message.type === "header" || message.type === "data" || message.type === "end") {
                 emitter.emit(`${message.type}:${message.identifier}`, message);
             }
-        };
-        connection = socket;
-        connection.on("message", messageHandler);
+        });
         connection.on("ping", () => { setTimeout(() => { connection.pong(); }, 15 * 1000); });
     });
 };
