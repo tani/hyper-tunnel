@@ -4,7 +4,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const circular_json_1 = require("circular-json");
 const events_1 = require("events");
 const http_1 = require("http");
-const timers_1 = require("timers");
 const WebSocket = require("ws");
 exports.default = (options) => {
     const url = `${options.protocol.split(":")[1]}://${options.authorization}@${options.remotehost}`;
@@ -68,7 +67,7 @@ exports.default = (options) => {
         process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);
         process.stdout.write(" --> ");
         process.stdout.write(`${options.protocol.split(":")[2]}://${options.localhost}\n`);
-        connection.on("pong", () => { timers_1.setTimeout(() => { connection.ping(); }, 15 * 1000); });
+        connection.on("pong", () => { setTimeout(() => { connection.ping(); }, 15 * 1000); });
         connection.ping();
     });
 };

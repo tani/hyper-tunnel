@@ -18,7 +18,6 @@
 import { parse, stringify } from "circular-json";
 import { EventEmitter } from "events";
 import { ClientRequest, ClientResponse, request, RequestOptions, ServerRequest } from "http";
-import { setTimeout } from "timers";
 import { URL } from "url";
 import WebSocket = require("ws");
 import { IDataMessage, IEndMessage, IHeaderMessage, Message, RawMessage } from "./message";
