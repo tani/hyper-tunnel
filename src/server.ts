@@ -79,6 +79,9 @@ export default (options: any) => {
     });
 
     webSocketServer.on("connection", (socket: WebSocket) => {
+        if (connection) {
+            connection.close();
+        }
         connection = socket;
         connection.on("message", (rawMessage: RawMessage) => {
             const message: Message<ClientResponse> = parse(rawMessage);
