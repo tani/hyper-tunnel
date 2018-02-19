@@ -2,73 +2,76 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const circular_json_1 = require("circular-json");
-const Commander = require("commander");
-const fs_1 = require("fs");
+const events_1 = require("events");
 const http_1 = require("http");
 const timers_1 = require("timers");
 const WebSocket = require("ws");
-const buffer = fs_1.readFileSync(`${__dirname}/../package.json`);
-const version = JSON.parse(buffer.toString()).version;
-Commander
-    .version(version, "-v, --version")
-    .option("-a, --authorization <username:password>", "login noncloud server")
-    .option("-r, --remotehost <remotehost:port>", "set noncloud server")
-    .option("-l, --localhost <localhost:port>", "tunnel traffic to this host")
-    .option("-p, --protocol <remotehost:websocket:localhost>", "use this protocols", "https:wss:http")
-    .parse(process.argv);
-const url = `${Commander.protocol.split(":")[1]}://${Commander.authorization}@${Commander.remotehost}`;
-const connection = new WebSocket(url, {
-    perMessageDeflate: true,
-});
-const messageHandler = (rawMessage) => {
-    const message = circular_json_1.parse(rawMessage);
-    if (message.type === "exit") {
-        process.stdout.write(message.payload + "\n");
-        process.exit();
-    }
-    else if (message.type === "request") {
-        const options = {
-            headers: message.payload.request.headers,
-            host: Commander.localhost.split(":")[0],
-            method: message.payload.request.method,
-            path: message.payload.request.url,
-            port: Commander.localhost.split(":")[1],
-            protocol: `${Commander.protocol.split(":")[2]}:`,
-        };
-        const httpRequest = http_1.request(options, (response) => {
-            let data = Buffer.alloc(0);
-            const receiveData = (chunk) => {
-                data = Buffer.concat([data, Buffer.from(chunk)]);
+exports.default = (options) => {
+    const url = `${options.protocol.split(":")[1]}://${options.authorization}@${options.remotehost}`;
+    const connection = new WebSocket(url, {
+        perMessageDeflate: true,
+    });
+    const emitter = new events_1.EventEmitter();
+    const messageHandler = (rawMessage) => {
+        const message = circular_json_1.parse(rawMessage);
+        if (message.type === "exit") {
+            process.stdout.write(message.payload + "\n");
+            process.exit();
+        }
+        if (message.type === "header") {
+            const requestOptions = {
+                headers: message.payload.headers,
+                host: options.localhost.split(":")[0],
+                method: message.payload.method,
+                path: message.payload.url,
+                port: options.localhost.split(":")[1],
+                protocol: `${options.protocol.split(":")[2]}:`,
             };
-            const sendResponse = () => {
-                const responseMessage = {
+            const clientRequest = http_1.request(requestOptions, (response) => {
+                connection.send(circular_json_1.stringify({
                     identifier: message.identifier,
-                    payload: {
-                        data: data.toString("base64"),
-                        response,
-                    },
-                    type: "response",
-                };
-                connection.send(circular_json_1.stringify(responseMessage));
-            };
-            response.on("data", receiveData);
-            response.on("end", sendResponse);
-        });
-        httpRequest.write(Buffer.from(message.payload.data, "base64"));
-        httpRequest.end();
-    }
+                    payload: response,
+                    type: "header",
+                }));
+                response.on("data", (data) => {
+                    const dataMessage = {
+                        identifier: message.identifier,
+                        payload: Buffer.from(data).toString("base64"),
+                        type: "data",
+                    };
+                    connection.send(circular_json_1.stringify(dataMessage));
+                });
+                response.on("end", () => {
+                    const endMessage = {
+                        identifier: message.identifier,
+                        type: "end",
+                    };
+                    connection.send(circular_json_1.stringify(endMessage));
+                });
+            });
+            emitter.on(`data:${message.identifier}`, (dataMessage) => {
+                clientRequest.write(Buffer.from(dataMessage.payload, "base64"));
+            });
+            emitter.on(`end:${message.identifier}`, (endMessage) => {
+                clientRequest.end();
+                emitter.removeAllListeners(`header:${message.identifier}`);
+                emitter.removeAllListeners(`data:${message.identifier}`);
+                emitter.removeAllListeners(`end:${message.identifier}`);
+            });
+        }
+        if (message.type === "data" || message.type === "end") {
+            emitter.emit(`${message.type}:${message.identifier}`, message);
+        }
+    };
+    const openHandler = () => {
+        connection.on("message", messageHandler);
+        process.stdout.write(`${options.protocol.split(":")[0]}://${options.remotehost}`);
+        process.stdout.write(" <-- ");
+        process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);
+        process.stdout.write(" --> ");
+        process.stdout.write(`${options.protocol.split(":")[2]}://${options.localhost}\n`);
+        connection.on("pong", () => { timers_1.setTimeout(() => { connection.ping(); }, 15 * 1000); });
+        connection.ping();
+    };
+    connection.on("open", openHandler);
 };
-const openHandler = () => {
-    const registerMessage = { type: "register" };
-    const rawMessage = circular_json_1.stringify(registerMessage);
-    connection.send(rawMessage);
-    connection.on("message", messageHandler);
-    process.stdout.write(`${Commander.protocol.split(":")[0]}://${Commander.remotehost}`);
-    process.stdout.write(" <-- ");
-    process.stdout.write(`${Commander.protocol.split(":")[1]}://${Commander.remotehost}`);
-    process.stdout.write(" --> ");
-    process.stdout.write(`${Commander.protocol.split(":")[2]}://${Commander.localhost}\n`);
-    connection.on("pong", () => { timers_1.setTimeout(() => { connection.ping(); }, 15 * 1000); });
-    connection.ping();
-};
-connection.on("open", openHandler);

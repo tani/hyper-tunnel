@@ -15,83 +15,82 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// import Axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { parse, stringify } from "circular-json";
-import Commander = require("commander");
-import { readFileSync } from "fs";
-import { ClientRequest, ClientRequestArgs, ClientResponse, request, RequestOptions } from "http";
+import { EventEmitter } from "events";
+import { ClientRequest, ClientResponse, request, RequestOptions, ServerRequest } from "http";
 import { setTimeout } from "timers";
 import { URL } from "url";
 import WebSocket = require("ws");
-import { IRegisterMessage, IRequestMessage, IResponseMessage, Message, RawMessage } from "./message";
+import { IDataMessage, IEndMessage, IHeaderMessage, Message, RawMessage } from "./message";
 
-const buffer = readFileSync(`${__dirname}/../package.json`);
-const version = JSON.parse(buffer.toString()).version;
-
-Commander
-    .version(version, "-v, --version")
-    .option("-a, --authorization <username:password>", "login noncloud server")
-    .option("-r, --remotehost <remotehost:port>", "set noncloud server")
-    .option("-l, --localhost <localhost:port>", "tunnel traffic to this host")
-    .option("-p, --protocol <remotehost:websocket:localhost>", "use this protocols", "https:wss:http")
-    .parse(process.argv);
-
-const url = `${Commander.protocol.split(":")[1]}://${Commander.authorization}@${Commander.remotehost}`;
-const connection = new WebSocket(url, {
-    perMessageDeflate: true,
-});
-
-const messageHandler = (rawMessage: RawMessage) => {
-    const message: Message = parse(rawMessage);
-    if (message.type === "exit") {
-        process.stdout.write(message.payload + "\n");
-        process.exit();
-    } else if (message.type === "request") {
-        const options: RequestOptions = {
-            headers: message.payload.request.headers,
-            host: Commander.localhost.split(":")[0],
-            method: message.payload.request.method,
-            path: message.payload.request.url,
-            port: Commander.localhost.split(":")[1],
-            protocol: `${Commander.protocol.split(":")[2]}:`,
-        };
-        const httpRequest = request(options, (response: ClientResponse) => {
-            let data: Buffer = Buffer.alloc(0);
-            const receiveData = (chunk: string | Buffer) => {
-                data = Buffer.concat([data, Buffer.from(chunk as any)]);
+export default (options: any) => {
+    const url = `${options.protocol.split(":")[1]}://${options.authorization}@${options.remotehost}`;
+    const connection = new WebSocket(url, {
+        perMessageDeflate: true,
+    });
+    const emitter = new EventEmitter();
+    const messageHandler = (rawMessage: RawMessage) => {
+        const message: Message<ServerRequest> = parse(rawMessage);
+        if (message.type === "exit") {
+            process.stdout.write(message.payload + "\n");
+            process.exit();
+        }
+        if (message.type === "header") {
+            const requestOptions: RequestOptions = {
+                headers: message.payload.headers,
+                host: options.localhost.split(":")[0],
+                method: message.payload.method,
+                path: message.payload.url,
+                port: options.localhost.split(":")[1],
+                protocol: `${options.protocol.split(":")[2]}:`,
             };
-            const sendResponse = () => {
-                const responseMessage: IResponseMessage = {
+            const clientRequest = request(requestOptions, (response: ClientResponse) => {
+                connection.send(stringify({
                     identifier: message.identifier,
-                    payload: {
-                        data: data.toString("base64"),
-                        response,
-                    },
-                    type: "response",
-                };
-                connection.send(stringify(responseMessage));
-            };
-            response.on("data", receiveData);
-            response.on("end", sendResponse);
-        });
-        httpRequest.write(Buffer.from(message.payload.data, "base64"));
-        httpRequest.end();
-    }
-};
+                    payload: response,
+                    type: "header",
+                } as IHeaderMessage<ClientResponse>));
+                response.on("data", (data: string | Buffer) => {
+                    const dataMessage: IDataMessage = {
+                        identifier: message.identifier,
+                        payload: Buffer.from(data as any).toString("base64"),
+                        type: "data",
+                    };
+                    connection.send(stringify(dataMessage));
+                });
+                response.on("end", () => {
+                    const endMessage: IEndMessage = {
+                        identifier: message.identifier,
+                        type: "end",
+                    };
+                    connection.send(stringify(endMessage));
+                });
+            });
+            emitter.on(`data:${message.identifier}`, (dataMessage: IDataMessage) => {
+                clientRequest.write(Buffer.from(dataMessage.payload, "base64"));
+            });
+            emitter.on(`end:${message.identifier}`, (endMessage: IEndMessage) => {
+                clientRequest.end();
+                emitter.removeAllListeners(`header:${message.identifier}`);
+                emitter.removeAllListeners(`data:${message.identifier}`);
+                emitter.removeAllListeners(`end:${message.identifier}`);
+            });
+        }
+        if (message.type === "data" || message.type === "end") {
+            emitter.emit(`${message.type}:${message.identifier}`, message);
+        }
+    };
 
-const openHandler = () => {
-    const registerMessage: IRegisterMessage = { type: "register" };
-    const rawMessage: RawMessage = stringify(registerMessage);
-    connection.send(rawMessage);
-    connection.on("message", messageHandler);
-    process.stdout.write(`${Commander.protocol.split(":")[0]}://${Commander.remotehost}`);
-    process.stdout.write(" <-- ");
-    process.stdout.write(`${Commander.protocol.split(":")[1]}://${Commander.remotehost}`);
-    process.stdout.write(" --> ");
-    process.stdout.write(`${Commander.protocol.split(":")[2]}://${Commander.localhost}\n`);
-    connection.on("pong", () => { setTimeout(() => { connection.ping(); }, 15 * 1000); });
-    connection.ping();
-};
+    const openHandler = () => {
+        connection.on("message", messageHandler);
+        process.stdout.write(`${options.protocol.split(":")[0]}://${options.remotehost}`);
+        process.stdout.write(" <-- ");
+        process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);
+        process.stdout.write(" --> ");
+        process.stdout.write(`${options.protocol.split(":")[2]}://${options.localhost}\n`);
+        connection.on("pong", () => { setTimeout(() => { connection.ping(); }, 15 * 1000); });
+        connection.ping();
+    };
 
-connection.on("open", openHandler);
+    connection.on("open", openHandler);
+};

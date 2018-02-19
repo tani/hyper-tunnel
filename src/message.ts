@@ -14,15 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import { ClientResponse, ServerRequest, ServerResponse } from "http";
-
-interface IResponse { response: ClientResponse; data: string; }
-interface IRequest { request: ServerRequest; data: string; }
-
-export interface IRegisterMessage { type: "register"; }
-export interface IRequestMessage  { identifier: string; type: "request"; payload: IRequest; }
-export interface IResponseMessage { identifier: string; type: "response"; payload: IResponse; }
+export interface IHeaderMessage<T> { identifier: string; type: "header"; payload: T; }
+export interface IDataMessage { identifier: string; type: "data"; payload: string; }
+export interface IEndMessage  { identifier: string; type: "end"; }
 export interface IExitMessage { type: "exit"; payload: string; }
 
-export type Message         = IRegisterMessage | IRequestMessage | IResponseMessage | IExitMessage;
-export type RawMessage      = string;
+export type Message<T> = IHeaderMessage<T> | IDataMessage | IEndMessage | IExitMessage;
+export type RawMessage = string;
