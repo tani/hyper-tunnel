@@ -78,7 +78,7 @@ exports.default = (options) => {
         process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);
         process.stdout.write(" --> ");
         process.stdout.write(`${options.protocol.split(":")[2]}://${options.localhost}\n`);
-        connection.on("pong", () => { setTimeout(() => { connection.ping(); }, 15 * 1000); });
+        connection.on("pong", () => { setTimeout(() => { connection.ping(); }, 30 * 1000); });
         connection.ping();
     });
 };
