@@ -31,10 +31,6 @@ export default (options: any) => {
         const emitter = new EventEmitter();
         connection.on("message", (rawMessage: RawMessage) => {
             const message: Message<ServerRequest> = parse(rawMessage);
-            if (message.type === "exit") {
-                process.stdout.write(message.payload + "\n");
-                process.exit();
-            }
             if (message.type === "header") {
                 const requestOptions: RequestOptions = {
                     headers: message.payload.headers,

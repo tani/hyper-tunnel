@@ -17,7 +17,6 @@
 export interface IHeaderMessage<T> { identifier: string; type: "header"; payload: T; }
 export interface IDataMessage { identifier: string; type: "data"; payload: string; }
 export interface IEndMessage  { identifier: string; type: "end"; }
-export interface IExitMessage { type: "exit"; payload: string; }
 
-export type Message<T> = IHeaderMessage<T> | IDataMessage | IEndMessage | IExitMessage;
+export type Message<T> = IHeaderMessage<T> | IDataMessage | IEndMessage;
 export type RawMessage = string;
