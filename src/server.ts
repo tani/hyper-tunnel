@@ -19,7 +19,6 @@ import { parse, stringify } from "circular-json";
 import { EventEmitter } from "events";
 import { readFileSync } from "fs";
 import { ClientResponse, createServer, ServerRequest, ServerResponse } from "http";
-import UUID = require("uuid/v1");
 import * as WebSocket from "ws";
 import { IDataMessage, IEndMessage, IExitMessage, IHeaderMessage, Message, RawMessage } from "./message";
 
@@ -32,7 +31,7 @@ export default (options: any) => {
             response.writeHead(404);
             response.end(readFileSync(`${__dirname}/404.html`));
         } else {
-            const identifier: string = UUID();
+            const identifier: string = Math.random().toString(36).slice(-8);
             connection.send(stringify({
                 identifier,
                 payload: request,
