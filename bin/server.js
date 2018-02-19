@@ -27,7 +27,6 @@ const circular_json_1 = require("circular-json");
 const events_1 = require("events");
 const fs_1 = require("fs");
 const http_1 = require("http");
-const UUID = require("uuid/v1");
 const WebSocket = __importStar(require("ws"));
 exports.default = (options) => {
     const emitter = new events_1.EventEmitter();
@@ -38,7 +37,7 @@ exports.default = (options) => {
             response.end(fs_1.readFileSync(`${__dirname}/404.html`));
         }
         else {
-            const identifier = UUID();
+            const identifier = Math.random().toString(36).slice(-8);
             connection.send(circular_json_1.stringify({
                 identifier,
                 payload: request,
