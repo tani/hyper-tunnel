@@ -71,7 +71,6 @@ export default (options: any) => {
             });
             emitter.on(`end:${message.identifier}`, (endMessage: IEndMessage) => {
                 clientRequest.end();
-                emitter.removeAllListeners(`header:${message.identifier}`);
                 emitter.removeAllListeners(`data:${message.identifier}`);
                 emitter.removeAllListeners(`end:${message.identifier}`);
             });
