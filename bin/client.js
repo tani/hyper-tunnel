@@ -23,7 +23,7 @@ const WebSocket = require("ws");
 exports.default = (options) => {
     const url = `${options.protocol.split(":")[1]}://${options.authorization}@${options.remotehost}`;
     const connection = new WebSocket(url, {
-        perMessageDeflate: true,
+        perMessageDeflate: true
     });
     connection.on("open", () => {
         const emitter = new events_1.EventEmitter();
@@ -36,26 +36,26 @@ exports.default = (options) => {
                     method: message.payload.method,
                     path: message.payload.url,
                     port: options.localhost.split(":")[1],
-                    protocol: `${options.protocol.split(":")[2]}:`,
+                    protocol: `${options.protocol.split(":")[2]}:`
                 };
                 const clientRequest = http_1.request(requestOptions, (response) => {
                     connection.send(circular_json_1.stringify({
                         identifier: message.identifier,
                         payload: response,
-                        type: "header",
+                        type: "header"
                     }));
                     response.on("data", (data) => {
                         const dataMessage = {
                             identifier: message.identifier,
                             payload: Buffer.from(data).toString("base64"),
-                            type: "data",
+                            type: "data"
                         };
                         connection.send(circular_json_1.stringify(dataMessage));
                     });
                     response.on("end", () => {
                         const endMessage = {
                             identifier: message.identifier,
-                            type: "end",
+                            type: "end"
                         };
                         connection.send(circular_json_1.stringify(endMessage));
                     });
@@ -73,7 +73,9 @@ exports.default = (options) => {
                 emitter.emit(`${message.type}:${message.identifier}`, message);
             }
         });
-        connection.on("close", () => { process.exit(); });
+        connection.on("close", () => {
+            process.exit();
+        });
         process.stdout.write(`${options.protocol.split(":")[0]}://${options.remotehost}`);
         process.stdout.write(" <-- ");
         process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);

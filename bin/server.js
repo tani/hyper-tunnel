@@ -37,24 +37,26 @@ exports.default = (options) => {
             response.end(fs_1.readFileSync(`${__dirname}/404.html`));
         }
         else {
-            const identifier = Math.random().toString(36).slice(-8);
+            const identifier = Math.random()
+                .toString(36)
+                .slice(-8);
             connection.send(circular_json_1.stringify({
                 identifier,
                 payload: request,
-                type: "header",
+                type: "header"
             }));
             request.on("data", (data) => {
                 const dataMessage = {
                     identifier,
                     payload: Buffer.from(data).toString("base64"),
-                    type: "data",
+                    type: "data"
                 };
                 connection.send(circular_json_1.stringify(dataMessage));
             });
             request.on("end", () => {
                 const endMessage = {
                     identifier,
-                    type: "end",
+                    type: "end"
                 };
                 connection.send(circular_json_1.stringify(endMessage));
             });
@@ -78,9 +80,10 @@ exports.default = (options) => {
         server,
         verifyClient: ({ req, secure }) => {
             if (secure || !options.encryption) {
-                return req.headers.authorization === `Basic ${Buffer.from(options.authorization).toString("base64")}`;
+                return (req.headers.authorization ===
+                    `Basic ${Buffer.from(options.authorization).toString("base64")}`);
             }
-        },
+        }
     });
     webSocketServer.on("connection", (socket) => {
         if (connection) {
@@ -91,7 +94,9 @@ exports.default = (options) => {
         connection = socket;
         connection.on("message", (rawMessage) => {
             const message = circular_json_1.parse(rawMessage);
-            if (message.type === "header" || message.type === "data" || message.type === "end") {
+            if (message.type === "header" ||
+                message.type === "data" ||
+                message.type === "end") {
                 emitter.emit(`${message.type}:${message.identifier}`, message);
             }
         });

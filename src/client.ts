@@ -16,69 +16,99 @@
  */
 import { parse, stringify } from "circular-json";
 import { EventEmitter } from "events";
-import { ClientRequest, ClientResponse, request, RequestOptions, ServerRequest } from "http";
+import {
+  ClientRequest,
+  ClientResponse,
+  request,
+  RequestOptions,
+  ServerRequest
+} from "http";
 import WebSocket = require("ws");
-import { IDataMessage, IEndMessage, IHeaderMessage, Message, RawMessage } from "./message";
+import {
+  IDataMessage,
+  IEndMessage,
+  IHeaderMessage,
+  Message,
+  RawMessage
+} from "./message";
 
 export default (options: any) => {
-    const url = `${options.protocol.split(":")[1]}://${options.authorization}@${options.remotehost}`;
-    const connection = new WebSocket(url, {
-        perMessageDeflate: true,
-    });
+  const url = `${options.protocol.split(":")[1]}://${options.authorization}@${
+    options.remotehost
+  }`;
+  const connection = new WebSocket(url, {
+    perMessageDeflate: true
+  });
 
-    connection.on("open", () => {
-        const emitter = new EventEmitter();
-        connection.on("message", (rawMessage: RawMessage) => {
-            const message: Message<ServerRequest> = parse(rawMessage);
-            if (message.type === "header") {
-                const requestOptions: RequestOptions = {
-                    headers: message.payload.headers,
-                    host: options.localhost.split(":")[0],
-                    method: message.payload.method,
-                    path: message.payload.url,
-                    port: options.localhost.split(":")[1],
-                    protocol: `${options.protocol.split(":")[2]}:`,
-                };
-                const clientRequest = request(requestOptions, (response: ClientResponse) => {
-                    connection.send(stringify({
-                        identifier: message.identifier,
-                        payload: response,
-                        type: "header",
-                    } as IHeaderMessage<ClientResponse>));
-                    response.on("data", (data: string | Buffer) => {
-                        const dataMessage: IDataMessage = {
-                            identifier: message.identifier,
-                            payload: Buffer.from(data as any).toString("base64"),
-                            type: "data",
-                        };
-                        connection.send(stringify(dataMessage));
-                    });
-                    response.on("end", () => {
-                        const endMessage: IEndMessage = {
-                            identifier: message.identifier,
-                            type: "end",
-                        };
-                        connection.send(stringify(endMessage));
-                    });
-                });
-                emitter.on(`data:${message.identifier}`, (dataMessage: IDataMessage) => {
-                    clientRequest.write(Buffer.from(dataMessage.payload, "base64"));
-                });
-                emitter.on(`end:${message.identifier}`, (endMessage: IEndMessage) => {
-                    clientRequest.end();
-                    emitter.removeAllListeners(`data:${message.identifier}`);
-                    emitter.removeAllListeners(`end:${message.identifier}`);
-                });
-            }
-            if (message.type === "data" || message.type === "end") {
-                emitter.emit(`${message.type}:${message.identifier}`, message);
-            }
+  connection.on("open", () => {
+    const emitter = new EventEmitter();
+    connection.on("message", (rawMessage: RawMessage) => {
+      const message: Message<ServerRequest> = parse(rawMessage);
+      if (message.type === "header") {
+        const requestOptions: RequestOptions = {
+          headers: message.payload.headers,
+          host: options.localhost.split(":")[0],
+          method: message.payload.method,
+          path: message.payload.url,
+          port: options.localhost.split(":")[1],
+          protocol: `${options.protocol.split(":")[2]}:`
+        };
+        const clientRequest = request(
+          requestOptions,
+          (response: ClientResponse) => {
+            connection.send(
+              stringify({
+                identifier: message.identifier,
+                payload: response,
+                type: "header"
+              } as IHeaderMessage<ClientResponse>)
+            );
+            response.on("data", (data: string | Buffer) => {
+              const dataMessage: IDataMessage = {
+                identifier: message.identifier,
+                payload: Buffer.from(data as any).toString("base64"),
+                type: "data"
+              };
+              connection.send(stringify(dataMessage));
+            });
+            response.on("end", () => {
+              const endMessage: IEndMessage = {
+                identifier: message.identifier,
+                type: "end"
+              };
+              connection.send(stringify(endMessage));
+            });
+          }
+        );
+        emitter.on(
+          `data:${message.identifier}`,
+          (dataMessage: IDataMessage) => {
+            clientRequest.write(Buffer.from(dataMessage.payload, "base64"));
+          }
+        );
+        emitter.on(`end:${message.identifier}`, (endMessage: IEndMessage) => {
+          clientRequest.end();
+          emitter.removeAllListeners(`data:${message.identifier}`);
+          emitter.removeAllListeners(`end:${message.identifier}`);
         });
-        connection.on("close", () => { process.exit(); });
-        process.stdout.write(`${options.protocol.split(":")[0]}://${options.remotehost}`);
-        process.stdout.write(" <-- ");
-        process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);
-        process.stdout.write(" --> ");
-        process.stdout.write(`${options.protocol.split(":")[2]}://${options.localhost}\n`);
+      }
+      if (message.type === "data" || message.type === "end") {
+        emitter.emit(`${message.type}:${message.identifier}`, message);
+      }
     });
+    connection.on("close", () => {
+      process.exit();
+    });
+    process.stdout.write(
+      `${options.protocol.split(":")[0]}://${options.remotehost}`
+    );
+    process.stdout.write(" <-- ");
+    process.stdout.write(
+      `${options.protocol.split(":")[1]}://${options.remotehost}`
+    );
+    process.stdout.write(" --> ");
+    process.stdout.write(
+      `${options.protocol.split(":")[2]}://${options.localhost}\n`
+    );
+  });
 };
