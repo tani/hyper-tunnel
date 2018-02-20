@@ -14,9 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-export interface IHeaderMessage<T> { identifier: string; type: "header"; payload: T; }
-export interface IDataMessage { identifier: string; type: "data"; payload: string; }
-export interface IEndMessage  { identifier: string; type: "end"; }
+export interface IHeaderMessage<T> {
+  identifier: string;
+  type: "header";
+  payload: T;
+}
+export interface IDataMessage {
+  identifier: string;
+  type: "data";
+  payload: string;
+}
+export interface IEndMessage {
+  identifier: string;
+  type: "end";
+}
 
 export type Message<T> = IHeaderMessage<T> | IDataMessage | IEndMessage;
 export type RawMessage = string;
