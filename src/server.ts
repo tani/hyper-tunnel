@@ -91,6 +91,5 @@ export default (options: any) => {
                 emitter.emit(`${message.type}:${message.identifier}`, message);
             }
         });
-        connection.on("ping", () => { connection.pong(); });
     });
 };

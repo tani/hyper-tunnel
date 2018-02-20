@@ -74,13 +74,11 @@ export default (options: any) => {
                 emitter.emit(`${message.type}:${message.identifier}`, message);
             }
         });
+        connection.on("close", () => { process.exit(); });
         process.stdout.write(`${options.protocol.split(":")[0]}://${options.remotehost}`);
         process.stdout.write(" <-- ");
         process.stdout.write(`${options.protocol.split(":")[1]}://${options.remotehost}`);
         process.stdout.write(" --> ");
         process.stdout.write(`${options.protocol.split(":")[2]}://${options.localhost}\n`);
-        connection.on("close", () => { process.exit(); });
-        connection.on("pong", () => { setTimeout(() => { connection.ping(); }, 30 * 1000); });
-        connection.ping();
     });
 };
