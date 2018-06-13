@@ -1,5 +1,7 @@
 # hyper-tunnel
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/asciian/hyper-tunnel.svg)](https://greenkeeper.io/)
+
 hyper-tunnel is HTTPS tunnel over WSS
 
 ## Introduction
