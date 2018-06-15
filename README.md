@@ -4,7 +4,7 @@ hyper-tunnel is HTTPS tunnel over WSS
 
 ## Introduction
 
-In the meetup and other situations, we have need to expose our localhost to host demo-application avoid Firewall for other participants. Generally, this is worst way. Tunneling over HTTP have risks by MITM. For this reason, almost services provides tunnels over End-to-End SSL/TLS in paid plan. This project is a simple toolkit to make HTTP tunneling over End-to-End SSL/TLS by WSS (WebSocketSecure). hyper-tunnel works on the following route.
+In the meetup and other situations, we have to expose our localhost to host demo-application avoid Firewall for other participants. Generally, this is worst way. Tunneling over HTTP have risks by MITM. For this reason, almost services provide tunnels over End-to-End SSL/TLS in paid plan. This project is a simple toolkit to make HTTP tunneling over End-to-End SSL/TLS by WSS (WebSocketSecure). hyper-tunnel works on the following route.
 
 ```
 web browser <--HTTPS--> hyper-tunnel server
