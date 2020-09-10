@@ -17,11 +17,9 @@
 import { parse, stringify } from "circular-json";
 import { EventEmitter } from "events";
 import {
-  ClientRequest,
-  ClientResponse,
+  IncomingMessage,
   request,
-  RequestOptions,
-  ServerRequest
+  RequestOptions
 } from "http";
 import WebSocket = require("ws");
 import {
@@ -43,25 +41,25 @@ export default (options: any) => {
   connection.on("open", () => {
     const emitter = new EventEmitter();
     connection.on("message", (rawMessage: RawMessage) => {
-      const message: Message<ServerRequest> = parse(rawMessage);
+      const message: Message<RequestOptions> = parse(rawMessage);
       if (message.type === "header") {
         const requestOptions: RequestOptions = {
           headers: message.payload.headers,
           host: options.localhost.split(":")[0],
           method: message.payload.method,
-          path: message.payload.url,
+          path: message.payload.path,
           port: options.localhost.split(":")[1],
           protocol: `${options.protocol.split(":")[2]}:`
         };
         const clientRequest = request(
           requestOptions,
-          (response: ClientResponse) => {
+          (response: IncomingMessage) => {
             connection.send(
               stringify({
                 identifier: message.identifier,
                 payload: response,
                 type: "header"
-              } as IHeaderMessage<ClientResponse>)
+              } as IHeaderMessage<IncomingMessage>)
             );
             response.on("data", (data: string | Buffer) => {
               const dataMessage: IDataMessage = {

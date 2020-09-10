@@ -18,9 +18,8 @@ import { parse, stringify } from "circular-json";
 import { EventEmitter } from "events";
 import { readFileSync } from "fs";
 import {
-  ClientResponse,
+  IncomingMessage,
   createServer,
-  ServerRequest,
   ServerResponse
 } from "http";
 import * as WebSocket from "ws";
@@ -37,7 +36,7 @@ export default (options: any) => {
   let connection: WebSocket;
 
   const server = createServer(
-    (request: ServerRequest, response: ServerResponse) => {
+    (request: IncomingMessage, response: ServerResponse) => {
       if (!connection || connection.readyState === connection.CLOSED) {
         response.writeHead(404);
         response.end(readFileSync(`${__dirname}/404.html`));
@@ -50,7 +49,7 @@ export default (options: any) => {
             identifier,
             payload: request,
             type: "header"
-          } as IHeaderMessage<ServerRequest>)
+          } as IHeaderMessage<IncomingMessage>)
         );
         request.on("data", (data: string | Buffer) => {
           const dataMessage: IDataMessage = {
@@ -69,7 +68,7 @@ export default (options: any) => {
         });
         emitter.on(
           `header:${identifier}`,
-          (headerMessage: IHeaderMessage<ClientResponse>) => {
+          (headerMessage: IHeaderMessage<IncomingMessage>) => {
             response.writeHead(
               headerMessage.payload.statusCode || 404,
               headerMessage.payload.headers
@@ -112,7 +111,7 @@ export default (options: any) => {
     }
     connection = socket;
     connection.on("message", (rawMessage: RawMessage) => {
-      const message: Message<ClientResponse> = parse(rawMessage);
+      const message: Message<IncomingMessage> = parse(rawMessage);
       if (
         message.type === "header" ||
         message.type === "data" ||
