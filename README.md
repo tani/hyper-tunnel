@@ -22,14 +22,7 @@ $ htunnel server --authorization USERNAME:PASSWORD --port 4000
 $ htunnel client --authorization USERNAME:PASSWORD --localhost localhost:8000 --remotehost localhost:4000
 ```
 
-Now you can access localhost:4000 with browsers, and hyper-tunnel access localhost:4000. 
-
-## Docker Image
-
-```sh
-$ docker run asciian/hyper-tunnel htunnel server ...
-$ docker run asciian/hyper-tunnel htunnel client ...
-```
+Now you can access localhost:4000 with browsers, and hyper-tunnel access localhost:4000. `
 
 ## Related Services
 
