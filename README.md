@@ -17,7 +17,7 @@ web browser <--HTTPS--> hyper-tunnel server
 ## How to use
 
 ```sh
-$ npm install -g asciian/hyper-tunnel
+$ npm install -g tani/hyper-tunnel
 $ htunnel server --authorization USERNAME:PASSWORD --port 4000
 $ htunnel client --authorization USERNAME:PASSWORD --localhost localhost:8000 --remotehost localhost:4000
 ```
