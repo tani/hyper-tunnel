@@ -16,7 +16,7 @@
   "license": "GPL",
   "dependencies": {
     "circular-json": "^0.5.9",
-    "commander": "^6.1.0",
+    "commander": "^8.0.0",
     "ws": "^7.3.1"
   },
   "devDependencies": {
