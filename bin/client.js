@@ -34,7 +34,7 @@ exports.default = (options) => {
                     headers: message.payload.headers,
                     host: options.localhost.split(":")[0],
                     method: message.payload.method,
-                    path: message.payload.url,
+                    path: message.payload.path,
                     port: options.localhost.split(":")[1],
                     protocol: `${options.protocol.split(":")[2]}:`
                 };
